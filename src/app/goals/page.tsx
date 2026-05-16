@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { Download } from "lucide-react";
-import { format } from "date-fns";
+import { format, addDays, startOfWeek, addWeeks, subWeeks } from "date-fns";
 import { TopBar } from "@/components/nav/topbar";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { DaySection } from "@/components/goals/day-section";
+import { WeekDayCard } from "@/components/goals/week-day-card";
+import { WeekNav } from "@/components/goals/week-nav";
 import { CarryBanner } from "@/components/goals/carry-banner";
 import { GoalsSidePanel, type SidePanelGoal } from "@/components/goals/side-panel";
 import {
@@ -18,23 +19,42 @@ import type { Task } from "@/lib/db/schema";
 
 export const dynamic = "force-dynamic";
 
-function isoOffset(offset: number): string {
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  d.setDate(d.getDate() + offset);
-  return d.toISOString().slice(0, 10);
+function toISO(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
 }
 
-export default async function GoalsPage() {
-  const today = isoOffset(0);
-  const past7Start = isoOffset(-7);
-  const next3End = isoOffset(3);
+function parseAnchor(raw: string | undefined): Date {
+  if (raw && /^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+    const d = new Date(raw + "T00:00:00");
+    if (!Number.isNaN(d.getTime())) return d;
+  }
+  return new Date();
+}
 
-  const [allGoals, staleTasks, rangeTasks, recentDone] = await Promise.all([
+export default async function GoalsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ w?: string }>;
+}) {
+  const sp = await searchParams;
+  const anchor = parseAnchor(sp.w);
+  const weekStart = startOfWeek(anchor, { weekStartsOn: 1 });
+  const weekEnd = addDays(weekStart, 6);
+  const weekStartISO = toISO(weekStart);
+  const weekEndISO = toISO(weekEnd);
+
+  const today = toISO(new Date());
+  const isCurrentWeek =
+    weekStartISO <= today && today <= weekEndISO;
+
+  const [allGoals, staleTasks, weekTasks, recentDone] = await Promise.all([
     getAllGoals(),
     getStaleUnfinishedTasks(),
-    getTasksByDateRange(past7Start, next3End),
-    getRecentDoneTasks(60),
+    getTasksByDateRange(weekStartISO, weekEndISO),
+    getRecentDoneTasks(80),
   ]);
 
   const now = Date.now();
@@ -53,38 +73,31 @@ export default async function GoalsPage() {
     .map((g) => ({ ...g })) as SidePanelGoal[];
 
   const tasksByDate = new Map<string, Task[]>();
-  for (const t of rangeTasks) {
+  for (const t of weekTasks) {
     const list = tasksByDate.get(t.date) ?? [];
     list.push(t);
     tasksByDate.set(t.date, list);
   }
-  const dayList = (d: string): Task[] => tasksByDate.get(d) ?? [];
 
-  // Future days: today, +1, +2, +3
-  const future = [0, 1, 2, 3].map((o) => ({
-    date: isoOffset(o),
-    tasks: dayList(isoOffset(o)),
-  }));
+  const days: string[] = [];
+  for (let i = 0; i < 7; i++) days.push(toISO(addDays(weekStart, i)));
 
-  // Past 7 days (excluding today), oldest -> newest at the top of the past block
-  const pastDays = [-1, -2, -3, -4, -5, -6, -7]
-    .map((o) => isoOffset(o))
-    .map((d) => ({ date: d, tasks: dayList(d) }))
-    .filter((d) => d.tasks.length > 0);
+  const prevAnchor = toISO(subWeeks(weekStart, 1));
+  const nextAnchor = toISO(addWeeks(weekStart, 1));
 
-  // Group recent-done into days for the archive section
+  // Archive: tasks with doneAt before this week
   const archiveByDay = new Map<string, Task[]>();
   for (const t of recentDone) {
     if (!t.doneAt) continue;
-    const day = t.doneAt.toISOString().slice(0, 10);
-    if (day >= past7Start) continue; // already covered above
+    const day = toISO(t.doneAt);
+    if (day >= weekStartISO && day <= weekEndISO) continue;
     const list = archiveByDay.get(day) ?? [];
     list.push(t);
     archiveByDay.set(day, list);
   }
-  const archiveDays = Array.from(archiveByDay.entries()).sort(([a], [b]) =>
-    b.localeCompare(a)
-  );
+  const archiveDays = Array.from(archiveByDay.entries())
+    .sort(([a], [b]) => b.localeCompare(a))
+    .slice(0, 14);
 
   return (
     <>
@@ -92,7 +105,7 @@ export default async function GoalsPage() {
       <main className="flex-1 px-4 md:px-6 py-5 max-w-[1600px] w-full mx-auto">
         <PageHeader
           title="Daily & Goals"
-          description="Today is the unit. Carry, drop, or break things down — don't let them rot. Weekly goals and milestones live on the right."
+          description="Plan a week at a time. Tasks live on a day; carry them, drop them, or break them down. Weekly goals and milestones live on the right."
           actions={
             <Button asChild size="sm" variant="outline">
               <Link href="/api/calendar?include=all" target="_blank">
@@ -104,50 +117,33 @@ export default async function GoalsPage() {
 
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px] xl:grid-cols-[minmax(0,1fr)_360px]">
           <div className="space-y-3">
-            {staleTasks.length > 0 ? <CarryBanner tasks={staleTasks} /> : null}
+            <WeekNav
+              weekStartISO={weekStartISO}
+              weekEndISO={weekEndISO}
+              prevAnchorISO={prevAnchor}
+              nextAnchorISO={nextAnchor}
+            />
 
-            <div className="space-y-3">
-              {future.map(({ date, tasks }) => (
-                <DaySection
-                  key={date}
-                  date={date}
-                  tasks={tasks}
-                  variant={date === today ? "today" : "default"}
+            {isCurrentWeek && staleTasks.length > 0 ? (
+              <CarryBanner tasks={staleTasks} />
+            ) : null}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {days.map((d) => (
+                <WeekDayCard
+                  key={d}
+                  date={d}
+                  tasks={tasksByDate.get(d) ?? []}
+                  isToday={d === today}
                 />
               ))}
             </div>
 
-            {pastDays.length > 0 ? (
-              <section className="pt-2">
+            {archiveDays.length > 0 ? (
+              <section className="pt-4">
                 <h3 className="text-[11px] font-semibold uppercase tracking-wide text-[hsl(var(--muted-foreground))] mb-2 px-1">
-                  Last 7 days
+                  Past completed
                 </h3>
-                <div className="space-y-2">
-                  {pastDays.map(({ date, tasks }) => (
-                    <DaySection
-                      key={date}
-                      date={date}
-                      tasks={tasks}
-                      variant="past"
-                      defaultOpen={false}
-                    />
-                  ))}
-                </div>
-              </section>
-            ) : null}
-
-            <section className="pt-4">
-              <h3 className="text-[11px] font-semibold uppercase tracking-wide text-[hsl(var(--muted-foreground))] mb-2 px-1">
-                Past completed
-              </h3>
-              {archiveDays.length === 0 ? (
-                <Card>
-                  <CardContent className="py-6 text-xs text-[hsl(var(--muted-foreground))]">
-                    Nothing archived yet — finished tasks older than a week
-                    show up here.
-                  </CardContent>
-                </Card>
-              ) : (
                 <Card>
                   <CardContent className="p-0">
                     <ul className="divide-y divide-[hsl(var(--border))]/40">
@@ -177,15 +173,12 @@ export default async function GoalsPage() {
                     </ul>
                   </CardContent>
                 </Card>
-              )}
-            </section>
+              </section>
+            ) : null}
           </div>
 
           <aside>
-            <GoalsSidePanel
-              weekly={weeklyActive}
-              milestones={milestonesOpen}
-            />
+            <GoalsSidePanel weekly={weeklyActive} milestones={milestonesOpen} />
           </aside>
         </div>
       </main>
