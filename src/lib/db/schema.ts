@@ -164,6 +164,27 @@ export const settings = sqliteTable("settings", {
   value: text("value").notNull(),
 });
 
+export const tasks = sqliteTable("tasks", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  title: text("title").notNull(),
+  notes: text("notes"),
+  category: text("category"),
+  goalId: integer("goal_id"),
+  date: text("date").notNull(),
+  done: integer("done", { mode: "boolean" }).notNull().default(false),
+  doneAt: integer("done_at", { mode: "timestamp_ms" }),
+  estimateMinutes: integer("estimate_minutes"),
+  carriedFromTaskId: integer("carried_from_task_id"),
+  carryCount: integer("carry_count").notNull().default(0),
+  droppedAt: integer("dropped_at", { mode: "timestamp_ms" }),
+  dropReason: text("drop_reason"),
+  position: integer("position").notNull().default(0),
+  createdAt: ts(),
+  updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+    .notNull()
+    .default(sql`(unixepoch() * 1000)`),
+});
+
 export type Problem = typeof problems.$inferSelect;
 export type NewProblem = typeof problems.$inferInsert;
 export type Application = typeof applications.$inferSelect;
@@ -182,3 +203,5 @@ export type Company = typeof companies.$inferSelect;
 export type NewCompany = typeof companies.$inferInsert;
 export type Mock = typeof mocks.$inferSelect;
 export type NewMock = typeof mocks.$inferInsert;
+export type Task = typeof tasks.$inferSelect;
+export type NewTask = typeof tasks.$inferInsert;

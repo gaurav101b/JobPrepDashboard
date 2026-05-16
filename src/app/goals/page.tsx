@@ -1,146 +1,193 @@
 import Link from "next/link";
-import { Calendar, Target, Download } from "lucide-react";
+import { Download } from "lucide-react";
+import { format } from "date-fns";
 import { TopBar } from "@/components/nav/topbar";
 import { PageHeader } from "@/components/page-header";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { EmptyState } from "@/components/empty-state";
-import { GoalCard } from "@/components/goals/goal-card";
-import { NewGoalButton } from "@/components/goals/new-goal-button";
-import { getAllGoals } from "@/lib/queries";
+import { DaySection } from "@/components/goals/day-section";
+import { CarryBanner } from "@/components/goals/carry-banner";
+import { GoalsSidePanel, type SidePanelGoal } from "@/components/goals/side-panel";
+import {
+  getAllGoals,
+  getStaleUnfinishedTasks,
+  getTasksByDateRange,
+  getRecentDoneTasks,
+} from "@/lib/queries";
+import type { Task } from "@/lib/db/schema";
 
 export const dynamic = "force-dynamic";
 
+function isoOffset(offset: number): string {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() + offset);
+  return d.toISOString().slice(0, 10);
+}
+
 export default async function GoalsPage() {
-  const all = await getAllGoals();
+  const today = isoOffset(0);
+  const past7Start = isoOffset(-7);
+  const next3End = isoOffset(3);
+
+  const [allGoals, staleTasks, rangeTasks, recentDone] = await Promise.all([
+    getAllGoals(),
+    getStaleUnfinishedTasks(),
+    getTasksByDateRange(past7Start, next3End),
+    getRecentDoneTasks(60),
+  ]);
+
   const now = Date.now();
-  const weeklyActive = all.filter(
-    (g) =>
-      g.kind === "weekly" &&
-      g.startDate.getTime() <= now &&
-      g.endDate.getTime() >= now
-  );
-  const milestonesOpen = all
-    .filter((g) => g.kind === "milestone" && !g.done)
-    .sort((a, b) => a.endDate.getTime() - b.endDate.getTime());
-  const past = all
+  const weeklyActive: SidePanelGoal[] = allGoals
     .filter(
-      (g) => (g.endDate.getTime() < now && !weeklyActive.includes(g)) || g.done
+      (g) =>
+        g.kind === "weekly" &&
+        g.startDate.getTime() <= now &&
+        g.endDate.getTime() >= now
     )
-    .filter((g) => !milestonesOpen.includes(g))
-    .slice(0, 24);
+    .map((g) => ({ ...g })) as SidePanelGoal[];
+
+  const milestonesOpen: SidePanelGoal[] = allGoals
+    .filter((g) => g.kind === "milestone" && !g.done)
+    .sort((a, b) => a.endDate.getTime() - b.endDate.getTime())
+    .map((g) => ({ ...g })) as SidePanelGoal[];
+
+  const tasksByDate = new Map<string, Task[]>();
+  for (const t of rangeTasks) {
+    const list = tasksByDate.get(t.date) ?? [];
+    list.push(t);
+    tasksByDate.set(t.date, list);
+  }
+  const dayList = (d: string): Task[] => tasksByDate.get(d) ?? [];
+
+  // Future days: today, +1, +2, +3
+  const future = [0, 1, 2, 3].map((o) => ({
+    date: isoOffset(o),
+    tasks: dayList(isoOffset(o)),
+  }));
+
+  // Past 7 days (excluding today), oldest -> newest at the top of the past block
+  const pastDays = [-1, -2, -3, -4, -5, -6, -7]
+    .map((o) => isoOffset(o))
+    .map((d) => ({ date: d, tasks: dayList(d) }))
+    .filter((d) => d.tasks.length > 0);
+
+  // Group recent-done into days for the archive section
+  const archiveByDay = new Map<string, Task[]>();
+  for (const t of recentDone) {
+    if (!t.doneAt) continue;
+    const day = t.doneAt.toISOString().slice(0, 10);
+    if (day >= past7Start) continue; // already covered above
+    const list = archiveByDay.get(day) ?? [];
+    list.push(t);
+    archiveByDay.set(day, list);
+  }
+  const archiveDays = Array.from(archiveByDay.entries()).sort(([a], [b]) =>
+    b.localeCompare(a)
+  );
 
   return (
     <>
-      <TopBar title="Goals & Roadmap" />
+      <TopBar title="Daily & Goals" />
       <main className="flex-1 px-4 md:px-6 py-5 max-w-[1600px] w-full mx-auto">
         <PageHeader
-          title="Goals & Roadmap"
-          description="Weekly goals to keep momentum · milestones to keep direction. Export to your calendar via ICS."
+          title="Daily & Goals"
+          description="Today is the unit. Carry, drop, or break things down — don't let them rot. Weekly goals and milestones live on the right."
           actions={
-            <div className="flex items-center gap-2">
-              <Button asChild size="sm" variant="outline">
-                <Link href="/api/calendar?include=all" target="_blank">
-                  <Download className="size-3.5" /> .ics
-                </Link>
-              </Button>
-              <NewGoalButton />
-            </div>
+            <Button asChild size="sm" variant="outline">
+              <Link href="/api/calendar?include=all" target="_blank">
+                <Download className="size-3.5" /> .ics
+              </Link>
+            </Button>
           }
         />
 
-        <section className="mb-6">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold flex items-center gap-1.5">
-              <Target className="size-4 text-amber-400" /> This week
-            </h3>
-            <NewGoalButton kind="weekly" />
-          </div>
-          {weeklyActive.length === 0 ? (
-            <EmptyState
-              title="No active weekly goals"
-              description="Pick 3 small things you'll do this week. Don't overcommit."
-            />
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-              {weeklyActive.map((g) => (
-                <GoalCard key={g.id} goal={g} />
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px] xl:grid-cols-[minmax(0,1fr)_360px]">
+          <div className="space-y-3">
+            {staleTasks.length > 0 ? <CarryBanner tasks={staleTasks} /> : null}
+
+            <div className="space-y-3">
+              {future.map(({ date, tasks }) => (
+                <DaySection
+                  key={date}
+                  date={date}
+                  tasks={tasks}
+                  variant={date === today ? "today" : "default"}
+                />
               ))}
             </div>
-          )}
-        </section>
 
-        <section className="mb-6">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold flex items-center gap-1.5">
-              <Calendar className="size-4 text-indigo-400" /> Open milestones
-            </h3>
-            <NewGoalButton kind="milestone" />
+            {pastDays.length > 0 ? (
+              <section className="pt-2">
+                <h3 className="text-[11px] font-semibold uppercase tracking-wide text-[hsl(var(--muted-foreground))] mb-2 px-1">
+                  Last 7 days
+                </h3>
+                <div className="space-y-2">
+                  {pastDays.map(({ date, tasks }) => (
+                    <DaySection
+                      key={date}
+                      date={date}
+                      tasks={tasks}
+                      variant="past"
+                      defaultOpen={false}
+                    />
+                  ))}
+                </div>
+              </section>
+            ) : null}
+
+            <section className="pt-4">
+              <h3 className="text-[11px] font-semibold uppercase tracking-wide text-[hsl(var(--muted-foreground))] mb-2 px-1">
+                Past completed
+              </h3>
+              {archiveDays.length === 0 ? (
+                <Card>
+                  <CardContent className="py-6 text-xs text-[hsl(var(--muted-foreground))]">
+                    Nothing archived yet — finished tasks older than a week
+                    show up here.
+                  </CardContent>
+                </Card>
+              ) : (
+                <Card>
+                  <CardContent className="p-0">
+                    <ul className="divide-y divide-[hsl(var(--border))]/40">
+                      {archiveDays.map(([day, items]) => (
+                        <li key={day} className="px-4 py-3">
+                          <div className="flex items-baseline justify-between mb-1">
+                            <span className="text-xs font-medium">
+                              {format(new Date(day + "T00:00:00"), "EEE, d MMM")}
+                            </span>
+                            <span className="text-[10px] text-[hsl(var(--muted-foreground))] tabular-nums">
+                              {items.length} done
+                            </span>
+                          </div>
+                          <ul className="space-y-0.5">
+                            {items.map((t) => (
+                              <li
+                                key={t.id}
+                                className="text-xs text-[hsl(var(--muted-foreground))] line-through truncate"
+                                title={t.title}
+                              >
+                                {t.title}
+                              </li>
+                            ))}
+                          </ul>
+                        </li>
+                      ))}
+                    </ul>
+                  </CardContent>
+                </Card>
+              )}
+            </section>
           </div>
-          {milestonesOpen.length === 0 ? (
-            <EmptyState
-              title="No open milestones"
-              description='e.g., "Apply to top 10 HFTs by Jul 31", "Finish DDIA by Aug 30".'
-            />
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-              {milestonesOpen.map((g) => (
-                <GoalCard key={g.id} goal={g} />
-              ))}
-            </div>
-          )}
-        </section>
 
-        <section>
-          <h3 className="text-sm font-semibold mb-3 text-[hsl(var(--muted-foreground))]">
-            Past & completed
-          </h3>
-          {past.length === 0 ? (
-            <Card>
-              <CardContent className="py-6 text-xs text-[hsl(var(--muted-foreground))]">
-                Nothing here yet — your finished and expired goals will land here.
-              </CardContent>
-            </Card>
-          ) : (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm">Archive</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ul className="divide-y divide-[hsl(var(--border))]">
-                  {past.map((g) => {
-                    const pct = Math.min(
-                      100,
-                      Math.round((g.progress / Math.max(1, g.target)) * 100)
-                    );
-                    return (
-                      <li
-                        key={g.id}
-                        className="py-2 flex items-center gap-3 text-sm"
-                      >
-                        <span
-                          className={
-                            "inline-block size-2 rounded-full " +
-                            (g.done ? "bg-emerald-500" : "bg-zinc-500")
-                          }
-                        />
-                        <span className="flex-1 truncate">
-                          {g.title}{" "}
-                          <span className="text-xs text-[hsl(var(--muted-foreground))]">
-                            · {g.kind}
-                          </span>
-                        </span>
-                        <span className="text-xs text-[hsl(var(--muted-foreground))] tabular-nums w-24 text-right">
-                          {g.progress}/{g.target} ({pct}%)
-                        </span>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </CardContent>
-            </Card>
-          )}
-        </section>
+          <aside>
+            <GoalsSidePanel
+              weekly={weeklyActive}
+              milestones={milestonesOpen}
+            />
+          </aside>
+        </div>
       </main>
     </>
   );

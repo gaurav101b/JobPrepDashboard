@@ -42,11 +42,11 @@ export const NAV_ITEMS: NavItem[] = [
   },
   {
     href: "/goals",
-    label: "Goals & Roadmap",
-    short: "Goals",
+    label: "Daily & Goals",
+    short: "Daily",
     icon: Target,
     group: "Daily",
-    description: "Weekly goals + milestones",
+    description: "Today's tasks · weekly goals · milestones",
   },
   {
     href: "/dsa",

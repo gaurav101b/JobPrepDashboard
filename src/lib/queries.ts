@@ -13,6 +13,8 @@ import {
   stories,
   mocks,
   settings,
+  tasks,
+  type Task,
 } from "@/lib/db/schema";
 import { parseJsonArray } from "@/lib/json";
 import { startOfDay } from "@/lib/utils";
@@ -373,6 +375,68 @@ export async function getActiveGoals() {
 export async function getAllGoals() {
   ensureDb();
   return db.select().from(goals).orderBy(desc(goals.startDate)).all();
+}
+
+export async function getTasksByDateRange(
+  startISO: string,
+  endISO: string
+): Promise<Task[]> {
+  ensureDb();
+  const rows = await db
+    .select()
+    .from(tasks)
+    .where(
+      and(
+        gte(tasks.date, startISO),
+        lte(tasks.date, endISO),
+        sql`${tasks.droppedAt} IS NULL`
+      )
+    )
+    .orderBy(asc(tasks.date), asc(tasks.position), asc(tasks.id))
+    .all();
+  return rows;
+}
+
+export async function getStaleUnfinishedTasks(): Promise<Task[]> {
+  ensureDb();
+  const today = new Date().toISOString().slice(0, 10);
+  const rows = await db
+    .select()
+    .from(tasks)
+    .where(
+      and(
+        sql`${tasks.date} < ${today}`,
+        eq(tasks.done, false),
+        sql`${tasks.droppedAt} IS NULL`
+      )
+    )
+    .orderBy(asc(tasks.date), asc(tasks.id))
+    .all();
+  return rows;
+}
+
+export async function getRecentDoneTasks(limit = 60): Promise<Task[]> {
+  ensureDb();
+  const rows = await db
+    .select()
+    .from(tasks)
+    .where(eq(tasks.done, true))
+    .orderBy(desc(tasks.doneAt))
+    .limit(limit)
+    .all();
+  return rows;
+}
+
+export async function getDroppedTasks(limit = 30): Promise<Task[]> {
+  ensureDb();
+  const rows = await db
+    .select()
+    .from(tasks)
+    .where(sql`${tasks.droppedAt} IS NOT NULL`)
+    .orderBy(desc(tasks.droppedAt))
+    .limit(limit)
+    .all();
+  return rows;
 }
 
 export async function getResources(opts?: { topic?: string; status?: string }) {

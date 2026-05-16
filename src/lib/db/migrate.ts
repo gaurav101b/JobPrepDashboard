@@ -139,6 +139,24 @@ const STATEMENTS = [
     key TEXT PRIMARY KEY,
     value TEXT NOT NULL
   );`,
+  `CREATE TABLE IF NOT EXISTS tasks (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    notes TEXT,
+    category TEXT,
+    goal_id INTEGER,
+    date TEXT NOT NULL,
+    done INTEGER NOT NULL DEFAULT 0,
+    done_at INTEGER,
+    estimate_minutes INTEGER,
+    carried_from_task_id INTEGER,
+    carry_count INTEGER NOT NULL DEFAULT 0,
+    dropped_at INTEGER,
+    drop_reason TEXT,
+    position INTEGER NOT NULL DEFAULT 0,
+    created_at INTEGER NOT NULL DEFAULT (unixepoch() * 1000),
+    updated_at INTEGER NOT NULL DEFAULT (unixepoch() * 1000)
+  );`,
   `CREATE INDEX IF NOT EXISTS idx_problems_status ON problems(status);`,
   `CREATE INDEX IF NOT EXISTS idx_problems_next_review ON problems(next_review_at);`,
   `CREATE INDEX IF NOT EXISTS idx_problems_kind ON problems(kind);`,
@@ -147,6 +165,9 @@ const STATEMENTS = [
   `CREATE INDEX IF NOT EXISTS idx_topics_domain ON topics(domain);`,
   `CREATE INDEX IF NOT EXISTS idx_goals_dates ON goals(start_date, end_date);`,
   `CREATE INDEX IF NOT EXISTS idx_mocks_date ON mocks(date);`,
+  `CREATE INDEX IF NOT EXISTS idx_tasks_date ON tasks(date);`,
+  `CREATE INDEX IF NOT EXISTS idx_tasks_done ON tasks(done);`,
+  `CREATE INDEX IF NOT EXISTS idx_tasks_dropped ON tasks(dropped_at);`,
 ];
 
 export function ensureMigrated() {
