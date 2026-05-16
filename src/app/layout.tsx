@@ -21,6 +21,23 @@ export const metadata: Metadata = {
     "Personal command center for SDE + HFT interview prep — DSA, system design, applications, time and goals.",
 };
 
+// Runs before hydration (no flicker on theme load).
+// Stored value is "light" | "dark" | "sunset"; missing falls back to system.
+const themeBootstrap = `
+(function () {
+  try {
+    var t = localStorage.getItem("theme");
+    if (t !== "light" && t !== "dark" && t !== "sunset") {
+      t = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches
+        ? "dark" : "light";
+    }
+    var cl = document.documentElement.classList;
+    cl.toggle("dark", t === "dark" || t === "sunset");
+    cl.toggle("sunset", t === "sunset");
+  } catch (e) {}
+})();
+`;
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -29,9 +46,12 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`dark ${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeBootstrap }} />
+      </head>
       <body className="min-h-full bg-[hsl(var(--background))] text-[hsl(var(--foreground))]">
         <TooltipProvider delayDuration={150}>
           <div className="flex min-h-screen">

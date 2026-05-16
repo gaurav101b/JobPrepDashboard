@@ -48,7 +48,7 @@ DB lifecycle:
 - **Server actions** for all mutations (`src/lib/actions/*.ts`). They `revalidatePath()` the routes they touch.
 - **Server-side queries** in `src/lib/queries.ts` for all read helpers used by RSC pages.
 - **Charts** are Recharts (`src/components/charts/`). They render fine in the dark and warm-paper themes — colors come from `CATEGORY_COLORS` in `src/lib/constants.ts`.
-- **Theme** uses CSS variables in `src/app/globals.css`. Two palettes: lavender→indigo light (Color Hunt `F4EEFF/DCD6F7/A6B1E1/424874`) and sunset/teal-copper dark (`2C3639/3F4E4F/A27B5C/DCD7C9`). The toggle is in `src/components/nav/topbar.tsx`. Default = system `prefers-color-scheme`.
+- **Theme** uses CSS variables in `src/app/globals.css`. Three palettes selectable from the topbar button (single-click cycle): pastel light (`F2EAE0/B4D3D9/BDA6CE/9B8EC7`), warm slate dark (`222831/393E46/948979/DFD0B8`), and sunset teal+copper (`2C3639/3F4E4F/A27B5C/DCD7C9`). Sunset is implemented as `.dark .sunset` on `<html>` so Tailwind's `dark:` variants still apply; the `.sunset` block in `globals.css` overrides only the palette variables that differ from plain dark. A pre-hydration script in `src/app/layout.tsx` reads `localStorage.theme` and sets the classes before paint to avoid flicker. Default for first-time visit follows `prefers-color-scheme`.
 
 ## Conventions
 

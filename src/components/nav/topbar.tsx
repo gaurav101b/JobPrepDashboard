@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { format } from "date-fns";
-import { Sun, Moon, Plus } from "lucide-react";
+import { Sun, Moon, Sunset, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MobileNav } from "./mobile-nav";
 import { QuickLogProblemDialog } from "@/components/quick/quick-log-problem";
@@ -15,9 +15,31 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+type Theme = "light" | "dark" | "sunset";
+
+const THEME_ORDER: Theme[] = ["light", "dark", "sunset"];
+
+function applyTheme(t: Theme) {
+  const cl = document.documentElement.classList;
+  cl.toggle("dark", t === "dark" || t === "sunset");
+  cl.toggle("sunset", t === "sunset");
+}
+
+function readTheme(): Theme {
+  if (typeof window === "undefined") return "dark";
+  const stored = localStorage.getItem("theme");
+  if (stored === "light" || stored === "dark" || stored === "sunset") {
+    return stored;
+  }
+  const prefersDark =
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(prefers-color-scheme: dark)").matches;
+  return prefersDark ? "dark" : "light";
+}
+
 export function TopBar({ title }: { title?: string }) {
   const [now, setNow] = useState<Date | null>(null);
-  const [dark, setDark] = useState(true);
+  const [theme, setTheme] = useState<Theme>("dark");
   const [openProblem, setOpenProblem] = useState(false);
   const [openApp, setOpenApp] = useState(false);
   const [openSession, setOpenSession] = useState(false);
@@ -29,22 +51,19 @@ export function TopBar({ title }: { title?: string }) {
   }, []);
 
   useEffect(() => {
-    const stored = localStorage.getItem("theme");
-    const prefersDark =
-      typeof window !== "undefined" &&
-      typeof window.matchMedia === "function" &&
-      window.matchMedia("(prefers-color-scheme: dark)").matches;
-    const isDark = stored ? stored === "dark" : prefersDark;
-    setDark(isDark);
-    document.documentElement.classList.toggle("dark", isDark);
+    setTheme(readTheme());
   }, []);
 
-  const toggleTheme = () => {
-    const next = !dark;
-    setDark(next);
-    localStorage.setItem("theme", next ? "dark" : "light");
-    document.documentElement.classList.toggle("dark", next);
+  const cycleTheme = () => {
+    const next = THEME_ORDER[(THEME_ORDER.indexOf(theme) + 1) % THEME_ORDER.length];
+    setTheme(next);
+    localStorage.setItem("theme", next);
+    applyTheme(next);
   };
+
+  const ThemeIcon = theme === "light" ? Sun : theme === "sunset" ? Sunset : Moon;
+  const nextTheme =
+    THEME_ORDER[(THEME_ORDER.indexOf(theme) + 1) % THEME_ORDER.length];
 
   return (
     <header className="sticky top-0 z-30 border-b border-[hsl(var(--border))] bg-[hsl(var(--background))]/80 backdrop-blur supports-[backdrop-filter]:bg-[hsl(var(--background))]/60">
@@ -79,10 +98,11 @@ export function TopBar({ title }: { title?: string }) {
         <Button
           size="icon"
           variant="ghost"
-          onClick={toggleTheme}
-          aria-label="Toggle theme"
+          onClick={cycleTheme}
+          aria-label={`Theme: ${theme}. Click for ${nextTheme}.`}
+          title={`${theme[0].toUpperCase() + theme.slice(1)} · click for ${nextTheme}`}
         >
-          {dark ? <Sun className="size-4" /> : <Moon className="size-4" />}
+          <ThemeIcon className="size-4" />
         </Button>
       </div>
       <QuickLogProblemDialog open={openProblem} onOpenChange={setOpenProblem} />

@@ -3,46 +3,89 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * Palettes from Color Hunt (user-picked):
- *   Light  — lavender / indigo:
- *     #F4EEFF (palest)  #DCD6F7 (lavender)  #A6B1E1 (periwinkle)  #424874 (deep indigo)
- *   Dark   — sunset / teal-and-copper:
- *     #2C3639 (charcoal teal)  #3F4E4F (slate teal)
- *     #A27B5C (warm copper)    #DCD7C9 (cream)
- * The base is muted; vibrant per-category accents (indigo / violet / teal / pink / amber)
- * are layered on top. Today/now/cta uses the palette's strong color (#424874 / #A27B5C).
+ * Three themes — cycle on the topbar button:
+ *
+ *   1. Light  (pastel paper):
+ *      #F2EAE0  #B4D3D9  #BDA6CE  #9B8EC7
+ *      Cream base, dusty-blue secondary, lavender accent, purple ring.
+ *
+ *   2. Dark   (warm slate):
+ *      #222831  #393E46  #948979  #DFD0B8
+ *      Ink base, slate cards, warm tan accent, cream text.
+ *
+ *   3. Sunset (deep teal + copper):
+ *      #2C3639  #3F4E4F  #A27B5C  #DCD7C9
+ *      Charcoal-teal base, slate cards, warm copper accent, cream text.
+ *
+ * Sunset is treated as a dark theme by Tailwind (we apply both `.dark .sunset`
+ * classes on <html>), so per-category dark: variants still trigger; the sunset
+ * block below overrides the palette variables that differ from plain dark.
+ *
+ * The base in every theme is muted; vibrant per-category accents
+ * (DSA indigo, SysDesign violet, LLD pink, MiscTech teal, Work amber) layer on
+ * top, plus a per-weekday rainbow tint on day cards in the planner.
  */
 :root {
-  --background: 261 100% 97%;
-  --foreground: 233 28% 26%;
+  --background: 33 38% 91%;
+  --foreground: 252 25% 18%;
   --card: 0 0% 100%;
-  --card-foreground: 233 28% 26%;
+  --card-foreground: 252 25% 18%;
   --popover: 0 0% 100%;
-  --popover-foreground: 233 28% 26%;
-  --primary: 233 28% 36%;
-  --primary-foreground: 261 100% 97%;
-  --secondary: 251 67% 91%;
-  --secondary-foreground: 233 28% 26%;
-  --muted: 251 60% 93%;
-  --muted-foreground: 233 18% 45%;
-  --accent: 229 50% 84%;
-  --accent-foreground: 233 28% 26%;
+  --popover-foreground: 252 25% 18%;
+  --primary: 252 33% 55%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 190 33% 88%;
+  --secondary-foreground: 252 30% 22%;
+  --muted: 33 28% 87%;
+  --muted-foreground: 252 14% 38%;
+  --accent: 270 31% 86%;
+  --accent-foreground: 252 30% 22%;
   --destructive: 0 65% 52%;
   --destructive-foreground: 0 0% 100%;
-  --border: 251 45% 85%;
-  --input: 251 50% 88%;
-  --ring: 233 30% 50%;
+  --border: 190 25% 78%;
+  --input: 190 25% 82%;
+  --ring: 252 33% 60%;
   --success: 152 50% 42%;
   --warning: 30 75% 48%;
   --info: 199 60% 48%;
-  --pop-1: 233 28% 36%; /* 424874 */
-  --pop-2: 229 50% 77%; /* A6B1E1 */
-  --pop-3: 251 67% 90%; /* DCD6F7 */
-  --pop-4: 261 100% 97%; /* F4EEFF */
+  --pop-1: 252 33% 67%; /* 9B8EC7 */
+  --pop-2: 190 33% 78%; /* B4D3D9 */
+  --pop-3: 270 31% 73%; /* BDA6CE */
+  --pop-4: 33 38% 91%;  /* F2EAE0 */
   --radius: 0.625rem;
 }
 
 .dark {
+  --background: 216 18% 13%;
+  --foreground: 37 35% 87%;
+  --card: 216 18% 17%;
+  --card-foreground: 37 35% 87%;
+  --popover: 216 16% 16%;
+  --popover-foreground: 37 35% 87%;
+  --primary: 37 41% 78%;
+  --primary-foreground: 216 18% 13%;
+  --secondary: 217 10% 25%;
+  --secondary-foreground: 37 35% 87%;
+  --muted: 217 10% 22%;
+  --muted-foreground: 36 11% 65%;
+  --accent: 36 18% 52%;
+  --accent-foreground: 216 18% 13%;
+  --destructive: 0 65% 50%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 217 10% 28%;
+  --input: 217 10% 28%;
+  --ring: 36 28% 70%;
+  --success: 152 55% 55%;
+  --warning: 38 92% 60%;
+  --info: 199 80% 60%;
+  --pop-1: 37 41% 80%;  /* DFD0B8 */
+  --pop-2: 36 11% 53%;  /* 948979 */
+  --pop-3: 217 10% 25%; /* 393E46 */
+  --pop-4: 216 18% 17%; /* 222831 */
+}
+
+/* Sunset overrides on top of .dark — both classes are applied to <html>. */
+.sunset {
   --background: 194 13% 18%;
   --foreground: 44 21% 86%;
   --card: 184 11% 24%;
@@ -57,16 +100,11 @@
   --muted-foreground: 36 16% 70%;
   --accent: 27 28% 42%;
   --accent-foreground: 44 28% 92%;
-  --destructive: 0 65% 50%;
-  --destructive-foreground: 0 0% 98%;
   --border: 184 10% 32%;
   --input: 184 10% 30%;
   --ring: 27 38% 62%;
-  --success: 152 55% 55%;
-  --warning: 38 92% 60%;
-  --info: 199 80% 60%;
   --pop-1: 27 32% 56%;  /* A27B5C — copper */
-  --pop-2: 184 11% 35%; /* lighter slate */
+  --pop-2: 184 11% 35%;
   --pop-3: 184 11% 24%; /* 3F4E4F */
   --pop-4: 44 21% 83%;  /* DCD7C9 — cream */
 }
@@ -120,17 +158,17 @@
     background-image:
       radial-gradient(
         circle at 0% 0%,
-        hsl(var(--pop-1) / 0.12) 0%,
+        hsl(var(--pop-1) / 0.18) 0%,
         transparent 45%
       ),
       radial-gradient(
         circle at 100% 0%,
-        hsl(var(--pop-2) / 0.18) 0%,
+        hsl(var(--pop-2) / 0.16) 0%,
         transparent 45%
       ),
       radial-gradient(
         circle at 100% 100%,
-        hsl(var(--pop-3) / 0.16) 0%,
+        hsl(var(--pop-3) / 0.14) 0%,
         transparent 50%
       );
     background-attachment: fixed;
