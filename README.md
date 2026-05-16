@@ -101,7 +101,7 @@ Three palettes from [Color Hunt](https://colorhunt.co/), cycle on the top-bar bu
 
 - **Light** (pastel paper): `#F2EAE0` / `#B4D3D9` / `#BDA6CE` / `#9B8EC7`
 - **Dark** (warm slate): `#222831` / `#393E46` / `#948979` / `#DFD0B8`
-- **Sunset** (deep teal + copper): `#2C3639` / `#3F4E4F` / `#A27B5C` / `#DCD7C9`
+- **Sunset** (plum + rose + peach): `#4C3A51` / `#774360` / `#B25068` / `#E7AB79`
 
 The base is muted; vibrant per-category accents (DSA indigo, SysDesign violet, LLD pink, MiscTech teal, Work amber) layer on top, plus a per-weekday rainbow tint on day cards in the planner. Choice persists in `localStorage`; first-time visit follows system `prefers-color-scheme`.
 

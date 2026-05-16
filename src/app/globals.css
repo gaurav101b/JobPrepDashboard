@@ -13,9 +13,9 @@
  *      #222831  #393E46  #948979  #DFD0B8
  *      Ink base, slate cards, warm tan accent, cream text.
  *
- *   3. Sunset (deep teal + copper):
- *      #2C3639  #3F4E4F  #A27B5C  #DCD7C9
- *      Charcoal-teal base, slate cards, warm copper accent, cream text.
+ *   3. Sunset (plum + rose + peach):
+ *      #4C3A51  #774360  #B25068  #E7AB79
+ *      Deep plum base, wine cards, rose accent, peach ring/highlights.
  *
  * Sunset is treated as a dark theme by Tailwind (we apply both `.dark .sunset`
  * classes on <html>), so per-category dark: variants still trigger; the sunset
@@ -86,27 +86,27 @@
 
 /* Sunset overrides on top of .dark — both classes are applied to <html>. */
 .sunset {
-  --background: 194 13% 18%;
-  --foreground: 44 21% 86%;
-  --card: 184 11% 24%;
-  --card-foreground: 44 21% 86%;
-  --popover: 184 11% 22%;
-  --popover-foreground: 44 21% 86%;
-  --primary: 27 32% 56%;
-  --primary-foreground: 194 13% 14%;
-  --secondary: 184 11% 30%;
-  --secondary-foreground: 44 21% 86%;
-  --muted: 184 9% 26%;
-  --muted-foreground: 36 16% 70%;
-  --accent: 27 28% 42%;
-  --accent-foreground: 44 28% 92%;
-  --border: 184 10% 32%;
-  --input: 184 10% 30%;
-  --ring: 27 38% 62%;
-  --pop-1: 27 32% 56%;  /* A27B5C — copper */
-  --pop-2: 184 11% 35%;
-  --pop-3: 184 11% 24%; /* 3F4E4F */
-  --pop-4: 44 21% 83%;  /* DCD7C9 — cream */
+  --background: 287 17% 27%;
+  --foreground: 27 55% 91%;
+  --card: 305 22% 31%;
+  --card-foreground: 27 55% 91%;
+  --popover: 305 22% 28%;
+  --popover-foreground: 27 55% 91%;
+  --primary: 345 39% 51%;
+  --primary-foreground: 27 55% 96%;
+  --secondary: 327 28% 36%;
+  --secondary-foreground: 27 55% 91%;
+  --muted: 287 15% 22%;
+  --muted-foreground: 27 30% 75%;
+  --accent: 345 35% 45%;
+  --accent-foreground: 27 55% 96%;
+  --border: 327 25% 40%;
+  --input: 287 18% 32%;
+  --ring: 27 70% 69%;
+  --pop-1: 345 39% 51%; /* B25068 — rose accent */
+  --pop-2: 27 70% 69%;  /* E7AB79 — peach */
+  --pop-3: 327 28% 36%; /* 774360 — wine */
+  --pop-4: 287 17% 27%; /* 4C3A51 — plum */
 }
 
 @theme inline {
