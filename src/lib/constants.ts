@@ -32,6 +32,69 @@ export const CATEGORY_COLORS: Record<StudyCategory, string> = {
   Work: "#f59e0b",
 };
 
+// Tailwind-class flavors of CATEGORY_COLORS for badges/borders/backgrounds.
+// Used by tasks, goals, milestones — anything that carries a category tag.
+export const CATEGORY_BADGE_CLASS: Record<StudyCategory, string> = {
+  DSA: "bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border-indigo-500/40",
+  SysDesign:
+    "bg-violet-500/15 text-violet-700 dark:text-violet-300 border-violet-500/40",
+  LLD: "bg-pink-500/15 text-pink-700 dark:text-pink-300 border-pink-500/40",
+  MiscTech:
+    "bg-teal-500/15 text-teal-700 dark:text-teal-300 border-teal-500/40",
+  Work: "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/40",
+};
+
+export const CATEGORY_BORDER_CLASS: Record<StudyCategory, string> = {
+  DSA: "border-l-indigo-500/70",
+  SysDesign: "border-l-violet-500/70",
+  LLD: "border-l-pink-500/70",
+  MiscTech: "border-l-teal-500/70",
+  Work: "border-l-amber-500/70",
+};
+
+// 0=Sun … 6=Sat (matches Date#getDay). Tints day cards with a calm rainbow
+// so a week is visually scannable; today still wins with the accent ring.
+export const WEEKDAY_COLOR_CLASS: Record<
+  number,
+  { text: string; border: string; bg: string }
+> = {
+  1: {
+    text: "text-indigo-500",
+    border: "border-l-indigo-500/60",
+    bg: "bg-indigo-500/[0.04]",
+  },
+  2: {
+    text: "text-sky-500",
+    border: "border-l-sky-500/60",
+    bg: "bg-sky-500/[0.04]",
+  },
+  3: {
+    text: "text-cyan-500",
+    border: "border-l-cyan-500/60",
+    bg: "bg-cyan-500/[0.04]",
+  },
+  4: {
+    text: "text-emerald-500",
+    border: "border-l-emerald-500/60",
+    bg: "bg-emerald-500/[0.04]",
+  },
+  5: {
+    text: "text-amber-500",
+    border: "border-l-amber-500/60",
+    bg: "bg-amber-500/[0.04]",
+  },
+  6: {
+    text: "text-rose-500",
+    border: "border-l-rose-500/60",
+    bg: "bg-rose-500/[0.04]",
+  },
+  0: {
+    text: "text-violet-500",
+    border: "border-l-violet-500/60",
+    bg: "bg-violet-500/[0.04]",
+  },
+};
+
 export const APPLICATION_STATUSES = [
   "Wishlist",
   "Researching",

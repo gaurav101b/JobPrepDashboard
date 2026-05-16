@@ -72,15 +72,15 @@ export function GoalFormDialog({
           kind: draft.kind,
           title: draft.title,
           category: draft.category || null,
-          target: Math.max(1, draft.target),
-          progress: Math.max(0, draft.progress),
-          unit: draft.unit || "count",
+          target: 1,
+          progress: 0,
+          unit: "count",
           startDate: draft.startDate,
           endDate: draft.endDate,
           notes: draft.notes || null,
           done: draft.done,
         });
-        toast.success(draft.id ? "Updated" : "Goal added");
+        toast.success(draft.id ? "Updated" : "Saved");
         onOpenChange(false);
       } catch (e) {
         toast.error("Failed: " + String(e));
@@ -90,7 +90,7 @@ export function GoalFormDialog({
 
   const remove = () => {
     if (!draft.id) return;
-    if (!confirm("Delete this goal?")) return;
+    if (!confirm("Delete this?")) return;
     startTransition(async () => {
       await deleteGoal(draft.id!);
       toast.success("Deleted");
@@ -102,7 +102,15 @@ export function GoalFormDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{draft.id ? "Edit goal" : "New goal"}</DialogTitle>
+          <DialogTitle>
+            {draft.id
+              ? draft.kind === "weekly"
+                ? "Edit weekly goal"
+                : "Edit milestone"
+              : draft.kind === "weekly"
+              ? "New weekly goal"
+              : "New milestone"}
+          </DialogTitle>
         </DialogHeader>
         <div className="grid gap-3">
           <div className="grid gap-1.5">
@@ -111,10 +119,14 @@ export function GoalFormDialog({
               id="title"
               value={draft.title}
               onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))}
-              placeholder="20 LeetCode mediums this week"
+              placeholder={
+                draft.kind === "weekly"
+                  ? "e.g. Stay consistent on DSA"
+                  : "e.g. Finish Alex Xu Vol 1"
+              }
             />
           </div>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 gap-3">
             <div className="grid gap-1.5">
               <Label>Kind</Label>
               <Select
@@ -133,7 +145,7 @@ export function GoalFormDialog({
               </Select>
             </div>
             <div className="grid gap-1.5">
-              <Label>Category</Label>
+              <Label>Tag</Label>
               <Select
                 value={draft.category ?? "none"}
                 onValueChange={(v) =>
@@ -144,7 +156,7 @@ export function GoalFormDialog({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">—</SelectItem>
+                  <SelectItem value="none">No tag</SelectItem>
                   {STUDY_CATEGORIES.map((c) => (
                     <SelectItem key={c} value={c}>
                       {CATEGORY_LABELS[c]}
@@ -152,34 +164,6 @@ export function GoalFormDialog({
                   ))}
                 </SelectContent>
               </Select>
-            </div>
-            <div className="grid gap-1.5">
-              <Label>Unit</Label>
-              <Input
-                value={draft.unit ?? "count"}
-                onChange={(e) => setDraft((d) => ({ ...d, unit: e.target.value }))}
-                placeholder="count, problems, hrs"
-              />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="grid gap-1.5">
-              <Label>Target</Label>
-              <Input
-                type="number"
-                value={draft.target}
-                onChange={(e) => setDraft((d) => ({ ...d, target: Number(e.target.value) }))}
-              />
-            </div>
-            <div className="grid gap-1.5">
-              <Label>Progress</Label>
-              <Input
-                type="number"
-                value={draft.progress}
-                onChange={(e) =>
-                  setDraft((d) => ({ ...d, progress: Number(e.target.value) }))
-                }
-              />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -215,21 +199,31 @@ export function GoalFormDialog({
             <Textarea
               value={draft.notes ?? ""}
               onChange={(e) => setDraft((d) => ({ ...d, notes: e.target.value }))}
-              rows={2}
+              rows={3}
+              placeholder="Why does this matter? Anything to remember…"
             />
           </div>
         </div>
         <DialogFooter className="gap-2">
           {draft.id ? (
-            <Button variant="destructive" onClick={remove} disabled={pending} className="mr-auto">
+            <Button
+              variant="destructive"
+              onClick={remove}
+              disabled={pending}
+              className="mr-auto"
+            >
               Delete
             </Button>
           ) : null}
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={pending}>
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={pending}
+          >
             Cancel
           </Button>
           <Button onClick={submit} disabled={pending}>
-            {pending ? "Saving..." : "Save"}
+            {pending ? "Saving…" : "Save"}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -250,7 +244,7 @@ function defaultDraft(): GoalDraft {
   return {
     kind: "weekly",
     title: "",
-    target: 5,
+    target: 1,
     progress: 0,
     unit: "count",
     startDate: monday.getTime(),

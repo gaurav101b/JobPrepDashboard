@@ -20,7 +20,12 @@ import {
   moveTaskRelative,
   dropTask,
 } from "@/lib/actions/tasks";
-import { CATEGORY_COLORS, CATEGORY_LABELS } from "@/lib/constants";
+import {
+  CATEGORY_BADGE_CLASS,
+  CATEGORY_BORDER_CLASS,
+  CATEGORY_LABELS,
+  type StudyCategory,
+} from "@/lib/constants";
 import { TaskEditDialog } from "./task-edit-dialog";
 import type { Task } from "@/lib/db/schema";
 
@@ -56,7 +61,10 @@ export function TaskRow({
   const isTomorrow = task.date === tomorrow;
   const isPast = task.date < today && !task.done;
 
-  const dot = task.category ? CATEGORY_COLORS[task.category as keyof typeof CATEGORY_COLORS] : null;
+  const cat = task.category as StudyCategory | null;
+  const badgeClass = cat ? CATEGORY_BADGE_CLASS[cat] : null;
+  const borderClass = cat ? CATEGORY_BORDER_CLASS[cat] : "border-l-transparent";
+  const catLabel = cat ? CATEGORY_LABELS[cat] : null;
 
   const onToggle = () =>
     start(async () => {
@@ -99,7 +107,9 @@ export function TaskRow({
     <>
       <div
         className={
-          "group flex items-center gap-2 py-1.5 px-2 -mx-2 rounded-md hover:bg-[hsl(var(--accent))]/40 " +
+          "group flex items-center gap-2 py-1.5 pl-2 pr-2 -mx-2 rounded-md border-l-2 " +
+          borderClass +
+          " hover:bg-[hsl(var(--accent))]/40 " +
           (task.done ? "opacity-60" : "")
         }
       >
@@ -109,13 +119,6 @@ export function TaskRow({
           disabled={pending}
           className="size-4"
         />
-        {dot ? (
-          <span
-            className="inline-block size-1.5 rounded-full shrink-0"
-            style={{ background: dot }}
-            aria-hidden
-          />
-        ) : null}
         <span
           className={
             "flex-1 text-sm truncate " +
@@ -125,6 +128,14 @@ export function TaskRow({
         >
           {task.title}
         </span>
+        {catLabel ? (
+          <Badge
+            variant="outline"
+            className={"text-[10px] px-1.5 py-0 font-medium " + (badgeClass ?? "")}
+          >
+            {catLabel}
+          </Badge>
+        ) : null}
         {task.estimateMinutes ? (
           <span className="text-[10px] text-[hsl(var(--muted-foreground))] tabular-nums">
             {task.estimateMinutes}m
@@ -187,15 +198,7 @@ export function TaskRow({
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-        {isPast ? (
-          <span className="sr-only">overdue</span>
-        ) : null}
-        {task.category ? (
-          <span className="hidden md:inline text-[10px] text-[hsl(var(--muted-foreground))] uppercase tracking-wide ml-1">
-            {CATEGORY_LABELS[task.category as keyof typeof CATEGORY_LABELS] ??
-              task.category}
-          </span>
-        ) : null}
+        {isPast ? <span className="sr-only">overdue</span> : null}
       </div>
       <TaskEditDialog
         open={editing}

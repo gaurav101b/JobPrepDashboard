@@ -1,11 +1,10 @@
 "use client";
 
-import { useState } from "react";
-import { format, formatDistanceToNow } from "date-fns";
-import { Plus, Pencil } from "lucide-react";
+import { useState, useTransition } from "react";
+import { format } from "date-fns";
+import { Plus, Pencil, CheckCircle2, Circle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import {
   Tabs,
@@ -13,6 +12,13 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
+import { setGoalDone } from "@/lib/actions/goals";
+import {
+  CATEGORY_BADGE_CLASS,
+  CATEGORY_BORDER_CLASS,
+  CATEGORY_LABELS,
+  type StudyCategory,
+} from "@/lib/constants";
 import { GoalFormDialog, type GoalDraft } from "./goal-form-dialog";
 
 export type SidePanelGoal = {
@@ -56,7 +62,7 @@ export function GoalsSidePanel({
     return {
       kind,
       title: "",
-      target: 5,
+      target: 1,
       progress: 0,
       unit: "count",
       startDate: start.getTime(),
@@ -82,7 +88,7 @@ export function GoalsSidePanel({
           {weekly.length === 0 ? (
             <Card>
               <CardContent className="p-4 text-xs text-[hsl(var(--muted-foreground))]">
-                Pick 2–3 weekly goals you can actually hit.
+                Pick 2–3 simple anchors for the week.
               </CardContent>
             </Card>
           ) : (
@@ -131,11 +137,13 @@ export function GoalsSidePanel({
 
 function SideGoalCard({ goal }: { goal: SidePanelGoal }) {
   const [editing, setEditing] = useState(false);
-  const pct = Math.min(
-    100,
-    Math.round((goal.progress / Math.max(1, goal.target)) * 100)
-  );
+  const [pending, start] = useTransition();
   const overdue = goal.endDate.getTime() < Date.now() && !goal.done;
+  const cat = goal.category as StudyCategory | null;
+  const borderClass = cat
+    ? CATEGORY_BORDER_CLASS[cat]
+    : "border-l-[hsl(var(--border))]";
+  const badgeClass = cat ? CATEGORY_BADGE_CLASS[cat] : "";
 
   const draft: GoalDraft = {
     id: goal.id,
@@ -151,14 +159,31 @@ function SideGoalCard({ goal }: { goal: SidePanelGoal }) {
     done: goal.done,
   };
 
+  const onToggle = () =>
+    start(async () => {
+      await setGoalDone(goal.id, !goal.done);
+    });
+
   return (
     <>
-      <Card>
-        <CardContent className="p-3 space-y-2">
-          <div className="flex items-start justify-between gap-2">
+      <Card className={"border-l-4 " + borderClass}>
+        <CardContent className="p-3 space-y-1.5">
+          <div className="flex items-start gap-2">
+            <button
+              onClick={onToggle}
+              disabled={pending}
+              className="mt-0.5 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+              aria-label="Toggle done"
+            >
+              {goal.done ? (
+                <CheckCircle2 className="size-4 text-emerald-500" />
+              ) : (
+                <Circle className="size-4" />
+              )}
+            </button>
             <h4
               className={
-                "text-sm font-medium leading-tight " +
+                "flex-1 text-sm font-medium leading-snug " +
                 (goal.done
                   ? "line-through text-[hsl(var(--muted-foreground))]"
                   : "")
@@ -169,50 +194,36 @@ function SideGoalCard({ goal }: { goal: SidePanelGoal }) {
             <Button
               size="icon"
               variant="ghost"
-              className="size-6 shrink-0"
+              className="size-6 shrink-0 -mr-1"
               onClick={() => setEditing(true)}
             >
               <Pencil className="size-3" />
             </Button>
           </div>
-          <div className="flex items-center gap-1.5 flex-wrap">
-            {goal.category ? (
-              <Badge variant="muted" className="text-[10px]">
-                {goal.category}
+          <div className="flex items-center gap-1.5 flex-wrap pl-6">
+            {cat ? (
+              <Badge
+                variant="outline"
+                className={"text-[10px] px-1.5 py-0 font-medium " + badgeClass}
+              >
+                {CATEGORY_LABELS[cat]}
               </Badge>
             ) : null}
             {overdue ? (
-              <Badge variant="destructive" className="text-[10px]">
+              <Badge variant="destructive" className="text-[10px] px-1.5 py-0">
                 overdue
               </Badge>
             ) : null}
             <span className="text-[10px] text-[hsl(var(--muted-foreground))] tabular-nums">
-              {goal.progress}/{goal.target}{" "}
-              {goal.unit && goal.unit !== "count" ? goal.unit : ""}
+              {format(goal.startDate, "d MMM")} →{" "}
+              {format(goal.endDate, "d MMM")}
             </span>
           </div>
-          <Progress
-            value={pct}
-            indicatorClassName={
-              goal.done
-                ? "bg-emerald-500"
-                : overdue
-                ? "bg-rose-500"
-                : pct >= 75
-                ? "bg-emerald-500"
-                : pct >= 40
-                ? "bg-indigo-500"
-                : "bg-amber-500"
-            }
-          />
-          <div className="flex items-center justify-between text-[10px] text-[hsl(var(--muted-foreground))]">
-            <span>
-              {format(goal.startDate, "d MMM")} → {format(goal.endDate, "d MMM")}
-            </span>
-            {!goal.done && !overdue ? (
-              <span>{formatDistanceToNow(goal.endDate, { addSuffix: true })}</span>
-            ) : null}
-          </div>
+          {goal.notes ? (
+            <p className="text-xs text-[hsl(var(--muted-foreground))] leading-snug pl-6">
+              {goal.notes}
+            </p>
+          ) : null}
         </CardContent>
       </Card>
       <GoalFormDialog
