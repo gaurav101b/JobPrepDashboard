@@ -54,9 +54,9 @@ export function WeekDayCard({
   return (
     <Card
       className={
-        "transition-colors min-h-[180px] flex flex-col border-l-4 " +
+        "weekday-card transition-colors min-h-[180px] flex flex-col border-l-4 " +
         (isToday
-          ? "border-l-[hsl(var(--ring))] bg-[hsl(var(--accent))]/40 ring-1 ring-[hsl(var(--ring))]/30 shadow-sm"
+          ? "is-today border-l-[hsl(var(--ring))] bg-[hsl(var(--accent))]/40 ring-1 ring-[hsl(var(--ring))]/30 shadow-sm"
           : palette.border + " " + palette.bg)
       }
     >
@@ -74,7 +74,7 @@ export function WeekDayCard({
             )}
             <span
               className={
-                "text-2xl font-semibold tabular-nums leading-none " +
+                "weekday-num text-2xl font-semibold tabular-nums leading-none " +
                 (isToday ? "text-[hsl(var(--ring))]" : palette.text)
               }
             >
@@ -82,7 +82,7 @@ export function WeekDayCard({
             </span>
             <span
               className={
-                "text-sm font-medium truncate " +
+                "weekday-name text-sm font-medium truncate " +
                 (isToday ? "" : palette.text)
               }
             >

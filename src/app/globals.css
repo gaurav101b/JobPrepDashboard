@@ -84,29 +84,34 @@
   --pop-4: 216 18% 17%; /* 222831 */
 }
 
-/* Sunset overrides on top of .dark — both classes are applied to <html>. */
+/* Sunset overrides on top of .dark — both classes are applied to <html>.
+ * Base = deep near-black plum so rose / peach / wine read as the highlights.
+ * The Color Hunt swatches are used as ACCENTS (ring, primary, gradients),
+ * not as base surfaces — that's what made the palette feel washed out. */
 .sunset {
-  --background: 287 17% 27%;
-  --foreground: 27 55% 91%;
-  --card: 305 22% 31%;
-  --card-foreground: 27 55% 91%;
-  --popover: 305 22% 28%;
-  --popover-foreground: 27 55% 91%;
-  --primary: 345 39% 51%;
-  --primary-foreground: 27 55% 96%;
-  --secondary: 327 28% 36%;
-  --secondary-foreground: 27 55% 91%;
-  --muted: 287 15% 22%;
+  --background: 287 28% 9%;
+  --foreground: 27 55% 92%;
+  --card: 287 22% 14%;
+  --card-foreground: 27 55% 92%;
+  --popover: 287 24% 12%;
+  --popover-foreground: 27 55% 92%;
+  --primary: 27 70% 69%;
+  --primary-foreground: 287 28% 10%;
+  --secondary: 327 22% 22%;
+  --secondary-foreground: 27 55% 92%;
+  --muted: 287 18% 13%;
   --muted-foreground: 27 30% 75%;
-  --accent: 345 35% 45%;
+  --accent: 345 39% 35%;
   --accent-foreground: 27 55% 96%;
-  --border: 327 25% 40%;
-  --input: 287 18% 32%;
+  --destructive: 0 65% 50%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 327 22% 26%;
+  --input: 287 22% 18%;
   --ring: 27 70% 69%;
-  --pop-1: 345 39% 51%; /* B25068 — rose accent */
-  --pop-2: 27 70% 69%;  /* E7AB79 — peach */
+  --pop-1: 27 70% 69%;  /* E7AB79 — peach (brightest pop) */
+  --pop-2: 345 39% 51%; /* B25068 — rose */
   --pop-3: 327 28% 36%; /* 774360 — wine */
-  --pop-4: 287 17% 27%; /* 4C3A51 — plum */
+  --pop-4: 287 28% 9%;  /* deep plum base */
 }
 
 @theme inline {
@@ -176,6 +181,22 @@
   ::selection {
     background: hsl(var(--ring) / 0.3);
   }
+}
+
+/*
+ * Sunset-specific overrides: in sunset the per-weekday rainbow tints fight
+ * with the plum + peach palette. Replace them with a unified wine border and
+ * a soft cream day-name on the standard card surface. Today's card keeps the
+ * accent ring (handled by the .is-today modifier).
+ */
+.sunset .weekday-card:not(.is-today) {
+  background-color: hsl(var(--card)) !important;
+  background-image: none !important;
+  border-left-color: hsl(327 32% 38%) !important;
+}
+.sunset .weekday-card:not(.is-today) .weekday-num,
+.sunset .weekday-card:not(.is-today) .weekday-name {
+  color: hsl(var(--foreground) / 0.92) !important;
 }
 
 @layer utilities {
