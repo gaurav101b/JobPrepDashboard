@@ -29,7 +29,9 @@ npx tsc --noEmit
 npm run build
 ```
 
-There is no production deployment. The owner runs `npm run dev` locally when working. If you need to "host" it elsewhere, copy the repo + the `data/` directory and `npm run start` after a build — but the `localhost:3000` redirect URI hard-coded into Spotify only works locally; you'd need to update the Spotify app and `SPOTIFY_REDIRECT_URI` env var.
+There is no production deployment. The owner runs `npm run dev` locally when working. If you need to "host" it elsewhere, copy the repo + the `data/` directory and `npm run start` after a build — but the `127.0.0.1:3000` redirect URI configured for Spotify only works locally; you'd need to update the Spotify app and `SPOTIFY_REDIRECT_URI` env var.
+
+**Spotify gotcha:** as of April 2025 Spotify rejects `localhost` and any HTTP redirect URI that isn't a loopback IP. The default redirect we ship is `http://127.0.0.1:3000/api/spotify/callback`. The user must (a) register exactly that string on the dashboard, (b) keep `SPOTIFY_REDIRECT_URI` matching, and (c) actually visit the app at `http://127.0.0.1:3000` (not `http://localhost:3000`) when clicking "Connect Spotify". If anything mismatches, Spotify replies `redirect_uri: Not matching configuration`.
 
 DB lifecycle:
 

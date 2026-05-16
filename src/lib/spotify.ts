@@ -39,9 +39,12 @@ export function isSpotifyConfigured(): boolean {
 }
 
 export function getSpotifyRedirectUri(): string {
+  // Spotify (April 2025) requires loopback redirect URIs to use 127.0.0.1
+  // (or [::1]) rather than the string "localhost". The dashboard, this
+  // value, and the URL you visit in the browser must all match exactly.
   return (
     process.env.SPOTIFY_REDIRECT_URI ??
-    "http://localhost:3000/api/spotify/callback"
+    "http://127.0.0.1:3000/api/spotify/callback"
   );
 }
 

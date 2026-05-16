@@ -62,18 +62,25 @@ No auth, no cookies — just `https://leetcode.com/graphql/`.
 
 ## Spotify Now Playing (optional)
 
+> Spotify rejects `localhost` and HTTP-without-IP redirect URIs since April 2025. Use `127.0.0.1` everywhere — both on the dashboard and in your browser.
+
 1. Create an app at [developer.spotify.com/dashboard](https://developer.spotify.com/dashboard).
-2. Add `http://localhost:3000/api/spotify/callback` as a Redirect URI.
+2. Add this **exact** Redirect URI on the dashboard:
+   ```
+   http://127.0.0.1:3000/api/spotify/callback
+   ```
 3. Copy `.env.local.example` → `.env.local` and fill in:
    ```
    SPOTIFY_CLIENT_ID=...
    SPOTIFY_CLIENT_SECRET=...
-   SPOTIFY_REDIRECT_URI=http://localhost:3000/api/spotify/callback
+   SPOTIFY_REDIRECT_URI=http://127.0.0.1:3000/api/spotify/callback
    ```
 4. Restart `npm run dev`.
-5. On `/time`, click **Connect Spotify** → approve → done. The widget polls `/api/spotify/now-playing` every 15s.
+5. Open the app at **`http://127.0.0.1:3000`** (not `localhost`) and on `/time`, click **Connect Spotify** → approve → done. The widget polls `/api/spotify/now-playing` every 15s.
 
 If env vars aren't set, the widget shows a setup hint instead — nothing else breaks.
+
+If you see *"redirect_uri: Not matching configuration"*: the URI in the Spotify dashboard, the value of `SPOTIFY_REDIRECT_URI`, and the address bar in your browser all have to match character-for-character.
 
 ## Calendar export (Google Calendar / Apple Calendar)
 
