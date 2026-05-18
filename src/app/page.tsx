@@ -8,6 +8,7 @@ import {
   Briefcase,
   Send,
   ArrowRight,
+  CheckSquare,
 } from "lucide-react";
 import { TopBar } from "@/components/nav/topbar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,12 +17,16 @@ import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { ActivityHeatmap } from "@/components/charts/heatmap";
 import { EmptyState } from "@/components/empty-state";
+import { TaskRow } from "@/components/goals/task-row";
+import { QuickAddTask } from "@/components/goals/quick-add-task";
 import {
   getActiveGoals,
   getApplicationsByStatus,
   getDailyMinutes,
   getProblemSummary,
+  getStaleUnfinishedTasks,
   getStreaks,
+  getTasksByDateRange,
   getTodayMinutes,
   getUpcomingSteps,
 } from "@/lib/queries";
@@ -30,6 +35,7 @@ import { formatMinutes } from "@/lib/utils";
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
+  const todayISO = new Date().toISOString().slice(0, 10);
   const [
     todayMinutes,
     streaks,
@@ -38,6 +44,8 @@ export default async function HomePage() {
     activeGoals,
     upcoming,
     appsByStatus,
+    todaysTasks,
+    staleTasks,
   ] = await Promise.all([
     getTodayMinutes(),
     getStreaks(),
@@ -46,12 +54,16 @@ export default async function HomePage() {
     getActiveGoals(),
     getUpcomingSteps(6),
     getApplicationsByStatus(),
+    getTasksByDateRange(todayISO, todayISO),
+    getStaleUnfinishedTasks(),
   ]);
 
   const inFlight = appsByStatus
     .filter((s) => ["Applied", "OA", "Phone", "Onsite"].includes(s.status))
     .reduce((s, x) => s + x.count, 0);
   const last7 = daily.slice(-7).reduce((s, d) => s + d.minutes, 0);
+  const tasksDone = todaysTasks.filter((t) => t.done).length;
+  const tasksTotal = todaysTasks.length;
 
   return (
     <>
@@ -106,19 +118,51 @@ export default async function HomePage() {
           <Card className="lg:col-span-2">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <div>
-                <CardTitle className="text-sm">Activity</CardTitle>
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <CheckSquare className="size-4" /> Today
+                </CardTitle>
                 <div className="text-xs text-[hsl(var(--muted-foreground))] mt-1">
-                  Last 26 weeks of study time
+                  {format(new Date(), "EEE, d MMM")}
+                  {tasksTotal > 0 ? (
+                    <>
+                      {" · "}
+                      <span className="tabular-nums">
+                        {tasksDone}/{tasksTotal}
+                      </span>{" "}
+                      done
+                    </>
+                  ) : null}
+                  {staleTasks.length > 0 ? (
+                    <>
+                      {" · "}
+                      <span className="text-amber-600 dark:text-amber-400">
+                        {staleTasks.length} carry-over
+                      </span>
+                    </>
+                  ) : null}
                 </div>
               </div>
               <Button asChild size="sm" variant="ghost">
-                <Link href="/time">
-                  Time tracker <ArrowRight className="size-3.5" />
+                <Link href="/goals">
+                  Goals page <ArrowRight className="size-3.5" />
                 </Link>
               </Button>
             </CardHeader>
             <CardContent>
-              <ActivityHeatmap data={daily} />
+              {tasksTotal === 0 ? (
+                <div className="py-3 text-center text-xs text-[hsl(var(--muted-foreground))]">
+                  Nothing scheduled for today yet — add one below.
+                </div>
+              ) : (
+                <div className="space-y-0.5">
+                  {todaysTasks.map((t) => (
+                    <TaskRow key={t.id} task={t} />
+                  ))}
+                </div>
+              )}
+              <div className="mt-2">
+                <QuickAddTask date={todayISO} placeholder="Add a task for today…" />
+              </div>
             </CardContent>
           </Card>
 
@@ -180,6 +224,25 @@ export default async function HomePage() {
             </CardContent>
           </Card>
         </div>
+
+        <Card className="mb-6">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <div>
+              <CardTitle className="text-sm">Activity</CardTitle>
+              <div className="text-xs text-[hsl(var(--muted-foreground))] mt-1">
+                Last 26 weeks of study time
+              </div>
+            </div>
+            <Button asChild size="sm" variant="ghost">
+              <Link href="/time">
+                Time tracker <ArrowRight className="size-3.5" />
+              </Link>
+            </Button>
+          </CardHeader>
+          <CardContent>
+            <ActivityHeatmap data={daily} />
+          </CardContent>
+        </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
