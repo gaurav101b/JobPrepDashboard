@@ -231,7 +231,15 @@ export const HLD_DOMAINS_ORDER = [
 export const DEFAULT_LC_CYCLE_START = "2026-05-01";
 export const DEFAULT_LC_CYCLE_LABEL = "May 2026 cycle";
 
-export const NEETCODE_150_PREVIEW = [
+// Raw seed used to build the "NeetCode 150 (essentials)" study list below.
+// Previously this was inserted directly into the `problems` table, which
+// polluted the user's actual problem log; it now lives in STUDY_LISTS only.
+const NC150_RAW: Array<{
+  title: string;
+  topic: string;
+  difficulty: ProblemDifficulty;
+  url: string;
+}> = [
   { title: "Two Sum", topic: "Arrays", difficulty: "Easy", url: "https://leetcode.com/problems/two-sum/" },
   { title: "Valid Anagram", topic: "Arrays", difficulty: "Easy", url: "https://leetcode.com/problems/valid-anagram/" },
   { title: "Group Anagrams", topic: "Arrays", difficulty: "Medium", url: "https://leetcode.com/problems/group-anagrams/" },
@@ -285,7 +293,145 @@ export const NEETCODE_150_PREVIEW = [
   { title: "Edit Distance", topic: "DP", difficulty: "Medium", url: "https://leetcode.com/problems/edit-distance/" },
   { title: "Maximum Subarray", topic: "Greedy", difficulty: "Medium", url: "https://leetcode.com/problems/maximum-subarray/" },
   { title: "Jump Game", topic: "Greedy", difficulty: "Medium", url: "https://leetcode.com/problems/jump-game/" },
-] as const;
+];
+
+function lcSlugFromUrl(url: string): string {
+  const m = url.match(/\/problems\/([^/]+)\/?$/);
+  return m ? m[1] : "";
+}
+
+// Curated DSA study lists. Each entry's items resolve to a LeetCode problem
+// by URL (https://leetcode.com/problems/<slug>/) so the LeetCode auto-import
+// auto-marks them done.
+function lcSlug(t: string): string {
+  return t
+    .toLowerCase()
+    .replace(/['"]/g, "")
+    .replace(/[^a-z0-9 ]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/ /g, "-");
+}
+
+type StudyListItem = {
+  title: string;
+  slug: string;
+  topic: string;
+  difficulty: ProblemDifficulty;
+};
+
+const LC75_RAW: Array<{ title: string; topic: string; difficulty: ProblemDifficulty }> = [
+  { title: "Merge Strings Alternately", topic: "Array / String", difficulty: "Easy" },
+  { title: "Greatest Common Divisor of Strings", topic: "Array / String", difficulty: "Easy" },
+  { title: "Kids With the Greatest Number of Candies", topic: "Array / String", difficulty: "Easy" },
+  { title: "Can Place Flowers", topic: "Array / String", difficulty: "Easy" },
+  { title: "Reverse Vowels of a String", topic: "Array / String", difficulty: "Easy" },
+  { title: "Reverse Words in a String", topic: "Array / String", difficulty: "Medium" },
+  { title: "Product of Array Except Self", topic: "Array / String", difficulty: "Medium" },
+  { title: "Increasing Triplet Subsequence", topic: "Array / String", difficulty: "Medium" },
+  { title: "String Compression", topic: "Array / String", difficulty: "Medium" },
+  { title: "Move Zeroes", topic: "Two Pointers", difficulty: "Easy" },
+  { title: "Is Subsequence", topic: "Two Pointers", difficulty: "Easy" },
+  { title: "Container With Most Water", topic: "Two Pointers", difficulty: "Medium" },
+  { title: "Max Number of K-Sum Pairs", topic: "Two Pointers", difficulty: "Medium" },
+  { title: "Maximum Average Subarray I", topic: "Sliding Window", difficulty: "Easy" },
+  { title: "Maximum Number of Vowels in a Substring of Given Length", topic: "Sliding Window", difficulty: "Medium" },
+  { title: "Max Consecutive Ones III", topic: "Sliding Window", difficulty: "Medium" },
+  { title: "Longest Subarray of 1's After Deleting One Element", topic: "Sliding Window", difficulty: "Medium" },
+  { title: "Find the Highest Altitude", topic: "Prefix Sum", difficulty: "Easy" },
+  { title: "Find Pivot Index", topic: "Prefix Sum", difficulty: "Easy" },
+  { title: "Find the Difference of Two Arrays", topic: "Hash Map / Set", difficulty: "Easy" },
+  { title: "Unique Number of Occurrences", topic: "Hash Map / Set", difficulty: "Easy" },
+  { title: "Determine if Two Strings Are Close", topic: "Hash Map / Set", difficulty: "Medium" },
+  { title: "Equal Row and Column Pairs", topic: "Hash Map / Set", difficulty: "Medium" },
+  { title: "Removing Stars From a String", topic: "Stack", difficulty: "Medium" },
+  { title: "Asteroid Collision", topic: "Stack", difficulty: "Medium" },
+  { title: "Decode String", topic: "Stack", difficulty: "Medium" },
+  { title: "Number of Recent Calls", topic: "Queue", difficulty: "Easy" },
+  { title: "Dota2 Senate", topic: "Queue", difficulty: "Medium" },
+  { title: "Delete the Middle Node of a Linked List", topic: "Linked List", difficulty: "Medium" },
+  { title: "Odd Even Linked List", topic: "Linked List", difficulty: "Medium" },
+  { title: "Reverse Linked List", topic: "Linked List", difficulty: "Easy" },
+  { title: "Maximum Twin Sum of a Linked List", topic: "Linked List", difficulty: "Medium" },
+  { title: "Maximum Depth of Binary Tree", topic: "Binary Tree - DFS", difficulty: "Easy" },
+  { title: "Leaf-Similar Trees", topic: "Binary Tree - DFS", difficulty: "Easy" },
+  { title: "Count Good Nodes in Binary Tree", topic: "Binary Tree - DFS", difficulty: "Medium" },
+  { title: "Path Sum III", topic: "Binary Tree - DFS", difficulty: "Medium" },
+  { title: "Longest ZigZag Path in a Binary Tree", topic: "Binary Tree - DFS", difficulty: "Medium" },
+  { title: "Lowest Common Ancestor of a Binary Tree", topic: "Binary Tree - DFS", difficulty: "Medium" },
+  { title: "Binary Tree Right Side View", topic: "Binary Tree - BFS", difficulty: "Medium" },
+  { title: "Maximum Level Sum of a Binary Tree", topic: "Binary Tree - BFS", difficulty: "Medium" },
+  { title: "Search in a Binary Search Tree", topic: "Binary Search Tree", difficulty: "Easy" },
+  { title: "Delete Node in a BST", topic: "Binary Search Tree", difficulty: "Medium" },
+  { title: "Keys and Rooms", topic: "Graphs - DFS", difficulty: "Medium" },
+  { title: "Number of Provinces", topic: "Graphs - DFS", difficulty: "Medium" },
+  { title: "Reorder Routes to Make All Paths Lead to the City Zero", topic: "Graphs - DFS", difficulty: "Medium" },
+  { title: "Evaluate Division", topic: "Graphs - DFS", difficulty: "Medium" },
+  { title: "Nearest Exit from Entrance in Maze", topic: "Graphs - BFS", difficulty: "Medium" },
+  { title: "Rotting Oranges", topic: "Graphs - BFS", difficulty: "Medium" },
+  { title: "Kth Largest Element in an Array", topic: "Heap / Priority Queue", difficulty: "Medium" },
+  { title: "Smallest Number in Infinite Set", topic: "Heap / Priority Queue", difficulty: "Medium" },
+  { title: "Maximum Subsequence Score", topic: "Heap / Priority Queue", difficulty: "Medium" },
+  { title: "Total Cost to Hire K Workers", topic: "Heap / Priority Queue", difficulty: "Medium" },
+  { title: "Guess Number Higher or Lower", topic: "Binary Search", difficulty: "Easy" },
+  { title: "Successful Pairs of Spells and Potions", topic: "Binary Search", difficulty: "Medium" },
+  { title: "Find Peak Element", topic: "Binary Search", difficulty: "Medium" },
+  { title: "Koko Eating Bananas", topic: "Binary Search", difficulty: "Medium" },
+  { title: "Letter Combinations of a Phone Number", topic: "Backtracking", difficulty: "Medium" },
+  { title: "Combination Sum III", topic: "Backtracking", difficulty: "Medium" },
+  { title: "N-th Tribonacci Number", topic: "DP - 1D", difficulty: "Easy" },
+  { title: "Min Cost Climbing Stairs", topic: "DP - 1D", difficulty: "Easy" },
+  { title: "House Robber", topic: "DP - 1D", difficulty: "Medium" },
+  { title: "Domino and Tromino Tiling", topic: "DP - 1D", difficulty: "Medium" },
+  { title: "Unique Paths", topic: "DP - Multidimensional", difficulty: "Medium" },
+  { title: "Longest Common Subsequence", topic: "DP - Multidimensional", difficulty: "Medium" },
+  { title: "Best Time to Buy and Sell Stock with Transaction Fee", topic: "DP - Multidimensional", difficulty: "Medium" },
+  { title: "Edit Distance", topic: "DP - Multidimensional", difficulty: "Medium" },
+  { title: "Counting Bits", topic: "Bit Manipulation", difficulty: "Easy" },
+  { title: "Single Number", topic: "Bit Manipulation", difficulty: "Easy" },
+  { title: "Minimum Flips to Make a OR b Equal to c", topic: "Bit Manipulation", difficulty: "Medium" },
+  { title: "Implement Trie (Prefix Tree)", topic: "Trie", difficulty: "Medium" },
+  { title: "Search Suggestions System", topic: "Trie", difficulty: "Medium" },
+  { title: "Non-overlapping Intervals", topic: "Intervals", difficulty: "Medium" },
+  { title: "Minimum Number of Arrows to Burst Balloons", topic: "Intervals", difficulty: "Medium" },
+  { title: "Daily Temperatures", topic: "Monotonic Stack", difficulty: "Medium" },
+  { title: "Online Stock Span", topic: "Monotonic Stack", difficulty: "Medium" },
+];
+
+export type StudyList = {
+  id: string;
+  title: string;
+  url: string;
+  description?: string;
+  problems: StudyListItem[];
+};
+
+export const STUDY_LISTS: StudyList[] = [
+  {
+    id: "leetcode-75",
+    title: "LeetCode 75",
+    url: "https://leetcode.com/studyplan/leetcode-75/",
+    description: "75 must-do problems organized by topic. Solid 1–3 month interview prep plan.",
+    problems: LC75_RAW.map((p) => ({ ...p, slug: lcSlug(p.title) })),
+  },
+  {
+    id: "neetcode-150",
+    title: "NeetCode 150 (essentials)",
+    url: "https://neetcode.io/practice",
+    description:
+      "Curated subset of NeetCode 150 — high-signal problems across arrays, two pointers, sliding window, stack, binary search, linked lists, trees, graphs, DP, and greedy.",
+    problems: NC150_RAW.map((p) => ({
+      title: p.title,
+      topic: p.topic,
+      difficulty: p.difficulty,
+      slug: lcSlugFromUrl(p.url),
+    })),
+  },
+];
+
+export function lcProblemUrl(slug: string): string {
+  return `https://leetcode.com/problems/${slug}/`;
+}
 
 export const RESOURCES_SEED = [
   { title: "Designing Data-Intensive Applications", kind: "Book", url: "https://dataintensive.net/", topic: "SysDesign" },

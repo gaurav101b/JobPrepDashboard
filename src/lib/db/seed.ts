@@ -4,14 +4,13 @@ import { ensureMigrated } from "./migrate";
 import {
   TARGET_COMPANIES,
   HLD_TRACKS,
-  NEETCODE_150_PREVIEW,
   RESOURCES_SEED,
   DEFAULT_LC_CYCLE_START,
 } from "@/lib/constants";
 
 let seeded = false;
 
-const SEED_VERSION = "v3";
+const SEED_VERSION = "v4";
 
 const CATEGORY_MIGRATION: Record<string, string> = {
   HLD: "SysDesign",
@@ -48,6 +47,14 @@ export function ensureSeeded() {
     if (currentVersion === null || currentVersion === "v1" || currentVersion === "v2") {
       migrateToV3();
     }
+    if (
+      currentVersion === null ||
+      currentVersion === "v1" ||
+      currentVersion === "v2" ||
+      currentVersion === "v3"
+    ) {
+      migrateToV4();
+    }
     sqlite
       .prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('seeded', ?)")
       .run(SEED_VERSION);
@@ -58,25 +65,9 @@ export function ensureSeeded() {
 }
 
 function seedFresh() {
-  const insertProblem = sqlite.prepare(
-    "INSERT INTO problems (kind, title, url, platform, difficulty, topics, source) VALUES (?, ?, ?, ?, ?, ?, ?)"
-  );
-  const problemCount = sqlite
-    .prepare<[], { c: number }>("SELECT COUNT(*) as c FROM problems")
-    .get();
-  if (!problemCount || problemCount.c === 0) {
-    for (const p of NEETCODE_150_PREVIEW) {
-      insertProblem.run(
-        "DSA",
-        p.title,
-        p.url,
-        "LeetCode",
-        p.difficulty,
-        JSON.stringify([p.topic]),
-        "NeetCode 150"
-      );
-    }
-  }
+  // Note: we no longer seed NeetCode 150 into the `problems` table — that
+  // list is surfaced via STUDY_LISTS in the DSA tab instead, so it doesn't
+  // pollute the user's actual problem log.
 
   const insertResource = sqlite.prepare(
     "INSERT INTO resources (title, kind, url, topic) VALUES (?, ?, ?, ?)"
@@ -218,4 +209,20 @@ function migrateToV3() {
   for (const name of v1Names) {
     if (!existingSet.has(name)) insertTopic.run("HLD-AlexXu-V1", name);
   }
+}
+
+function migrateToV4() {
+  // The original NeetCode 150 seed was inserted directly into the `problems`
+  // table on first run, which polluted the actual problem log with rows the
+  // user never touched. That list is now surfaced via STUDY_LISTS instead.
+  // Delete only untouched seed rows; preserve any the user has interacted
+  // with (status changed away from Todo, or attempts logged). The new study
+  // list picks up preserved rows by URL match.
+  // Column names use snake_case here because we're going through raw
+  // better-sqlite3, not Drizzle (which would translate camelCase).
+  sqlite
+    .prepare(
+      "DELETE FROM problems WHERE source = 'NeetCode 150' AND status = 'Todo' AND COALESCE(attempts, 0) = 0 AND last_attempted_at IS NULL"
+    )
+    .run();
 }

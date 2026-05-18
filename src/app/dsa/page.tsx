@@ -3,22 +3,18 @@ import { TopBar } from "@/components/nav/topbar";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatCard } from "@/components/stat-card";
-import {
-  getProblemSummary,
-  getProblemsList,
-  getProblemTopics,
-} from "@/lib/queries";
+import { getProblemSummary, getStudyListStatus } from "@/lib/queries";
+import { STUDY_LISTS, lcProblemUrl } from "@/lib/constants";
+import { StudyListSection } from "@/components/dsa/study-list-section";
 import { LeetCodeImport } from "@/components/dsa/leetcode-import";
 import {
   getLeetCodeUsername,
   getLeetCodeCycleStart,
   importLeetCodeRecent,
 } from "@/lib/actions/leetcode";
-import { ProblemsTable, type Row } from "@/components/dsa/problems-table";
 import { SolvedByDifficulty } from "@/components/dsa/solved-by-difficulty";
 import { TopicsBars } from "@/components/dsa/topics-bars";
 import { LogProblemButton } from "@/components/dsa/log-problem-button";
-import { parseJsonArray } from "@/lib/json";
 import { db } from "@/lib/db";
 import { ensureDb } from "@/lib/db/init";
 import { settings } from "@/lib/db/schema";
@@ -42,19 +38,15 @@ async function getCachedStats() {
   }
 }
 
-export default async function DsaPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ due?: string }>;
-}) {
-  const sp = await searchParams;
-  const dueOnly = sp.due === "1";
-  const [summary, all, topics, lcUser, lcCycleStart] = await Promise.all([
+export default async function DsaPage() {
+  const allListUrls = STUDY_LISTS.flatMap((l) =>
+    l.problems.map((p) => lcProblemUrl(p.slug))
+  );
+  const [summary, lcUser, lcCycleStart, listStatus] = await Promise.all([
     getProblemSummary(),
-    getProblemsList({ orderBy: "recent" }),
-    getProblemTopics(),
     getLeetCodeUsername(),
     getLeetCodeCycleStart(),
+    getStudyListStatus(allListUrls),
   ]);
 
   let lcStats = await getCachedStats();
@@ -75,27 +67,6 @@ export default async function DsaPage({
       // ignore network errors on first load
     }
   }
-
-  const rows: Row[] = all.map((p) => ({
-    id: p.id,
-    kind: p.kind,
-    title: p.title,
-    url: p.url,
-    platform: p.platform,
-    difficulty: p.difficulty,
-    topics: parseJsonArray(p.topics),
-    companies: parseJsonArray(p.companies),
-    status: p.status,
-    attempts: p.attempts,
-    timeMinutes: p.timeMinutes ?? 0,
-    insight: p.insight,
-    source: p.source,
-    lastAttemptedAt: p.lastAttemptedAt,
-    nextReviewAt: p.nextReviewAt,
-    reviewLevel: p.reviewLevel,
-    starred: !!p.starred,
-    notes: p.notes,
-  }));
 
   const topicEntries = Object.entries(summary.byTopic)
     .sort((a, b) => b[1] - a[1])
@@ -191,7 +162,16 @@ export default async function DsaPage({
           </Card>
         </div>
 
-        <ProblemsTable rows={rows} topics={topics} initialDueOnly={dueOnly} />
+        <div className="space-y-3">
+          {STUDY_LISTS.map((list, idx) => (
+            <StudyListSection
+              key={list.id}
+              list={list}
+              statusByUrl={listStatus}
+              defaultOpen={idx === 0}
+            />
+          ))}
+        </div>
       </main>
     </>
   );

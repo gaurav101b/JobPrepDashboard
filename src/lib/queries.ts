@@ -255,59 +255,6 @@ export async function getProblemSummary() {
   };
 }
 
-export async function getProblemsList(opts?: {
-  kind?: string;
-  status?: string;
-  difficulty?: string;
-  topic?: string;
-  search?: string;
-  dueOnly?: boolean;
-  limit?: number;
-  orderBy?: "recent" | "title" | "due";
-}) {
-  ensureDb();
-  const filters = [] as ReturnType<typeof eq>[];
-  if (opts?.kind) filters.push(eq(problems.kind, opts.kind));
-  if (opts?.status) filters.push(eq(problems.status, opts.status));
-  if (opts?.difficulty) filters.push(eq(problems.difficulty, opts.difficulty));
-
-  let query = db.select().from(problems);
-  if (filters.length) query = query.where(and(...filters)) as typeof query;
-  let rows = await query.all();
-
-  if (opts?.search) {
-    const s = opts.search.toLowerCase();
-    rows = rows.filter((r) => r.title.toLowerCase().includes(s));
-  }
-  if (opts?.topic) {
-    rows = rows.filter((r) => parseJsonArray(r.topics).includes(opts.topic!));
-  }
-  if (opts?.dueOnly) {
-    const now = Date.now();
-    rows = rows.filter((r) => r.nextReviewAt && r.nextReviewAt.getTime() <= now);
-  }
-
-  const orderBy = opts?.orderBy ?? "recent";
-  if (orderBy === "recent") {
-    rows.sort((a, b) => {
-      const at = a.lastAttemptedAt?.getTime() ?? a.createdAt.getTime();
-      const bt = b.lastAttemptedAt?.getTime() ?? b.createdAt.getTime();
-      return bt - at;
-    });
-  } else if (orderBy === "title") {
-    rows.sort((a, b) => a.title.localeCompare(b.title));
-  } else if (orderBy === "due") {
-    rows.sort((a, b) => {
-      const at = a.nextReviewAt?.getTime() ?? Number.MAX_SAFE_INTEGER;
-      const bt = b.nextReviewAt?.getTime() ?? Number.MAX_SAFE_INTEGER;
-      return at - bt;
-    });
-  }
-
-  if (opts?.limit) rows = rows.slice(0, opts.limit);
-  return rows;
-}
-
 export async function getApplicationsList() {
   ensureDb();
   return db
@@ -427,6 +374,23 @@ export async function getRecentDoneTasks(limit = 60): Promise<Task[]> {
   return rows;
 }
 
+export async function getStudyListStatus(
+  urls: string[]
+): Promise<Record<string, string>> {
+  ensureDb();
+  if (urls.length === 0) return {};
+  const rows = await db
+    .select({ url: problems.url, status: problems.status })
+    .from(problems)
+    .where(inArray(problems.url, urls))
+    .all();
+  const out: Record<string, string> = {};
+  for (const r of rows) {
+    if (r.url) out[r.url] = r.status;
+  }
+  return out;
+}
+
 export async function getDroppedTasks(limit = 30): Promise<Task[]> {
   ensureDb();
   const rows = await db
@@ -469,22 +433,6 @@ export async function getCompanies() {
 export async function getMocks() {
   ensureDb();
   return db.select().from(mocks).orderBy(desc(mocks.date)).all();
-}
-
-export async function getProblemTopics(): Promise<string[]> {
-  ensureDb();
-  const rows = await db.select({ topics: problems.topics }).from(problems).all();
-  const set = new Set<string>();
-  for (const r of rows) for (const t of parseJsonArray(r.topics)) set.add(t);
-  return Array.from(set).sort();
-}
-
-export async function getProblemCompanies(): Promise<string[]> {
-  ensureDb();
-  const rows = await db.select({ companies: problems.companies }).from(problems).all();
-  const set = new Set<string>();
-  for (const r of rows) for (const t of parseJsonArray(r.companies)) set.add(t);
-  return Array.from(set).sort();
 }
 
 export const _internal = { inArray };
