@@ -20,11 +20,14 @@ export async function logSession(input: SessionInput) {
   const startedAt = input.startedAt
     ? new Date(input.startedAt)
     : new Date(Date.now() - input.minutes * 60_000);
+  // endedAt should sit `minutes` after startedAt — for backdated entries we
+  // can't use Date.now() or the session would span the gap from "then" to now.
+  const endedAt = new Date(startedAt.getTime() + input.minutes * 60_000);
   await db.insert(studySessions).values({
     category: input.category,
     minutes: input.minutes,
     startedAt,
-    endedAt: new Date(),
+    endedAt,
     note: input.note || null,
     source: input.source || "manual",
   });
