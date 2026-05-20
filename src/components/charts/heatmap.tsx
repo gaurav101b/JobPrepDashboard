@@ -2,7 +2,7 @@
 
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { format } from "date-fns";
-import { cn } from "@/lib/utils";
+import { cn, formatHm } from "@/lib/utils";
 
 export type HeatmapDay = { day: string; minutes: number };
 
@@ -16,12 +16,15 @@ function intensity(minutes: number, max: number): number {
   return 4;
 }
 
+// `--foreground/10` adapts to all three themes: dark FG on light cards in
+// light mode, light FG on dark cards in dark/sunset modes — gives a visible
+// "no activity" cell everywhere instead of vanishing on near-equal --muted.
 const COLORS = [
-  "bg-[hsl(var(--muted))]/40",
-  "bg-emerald-500/25",
-  "bg-emerald-500/45",
-  "bg-emerald-500/65",
-  "bg-emerald-500/90",
+  "bg-[hsl(var(--foreground))]/10",
+  "bg-emerald-500/30",
+  "bg-emerald-500/50",
+  "bg-emerald-500/70",
+  "bg-emerald-500/95",
 ];
 
 export function ActivityHeatmap({ data }: { data: HeatmapDay[] }) {
@@ -75,8 +78,8 @@ export function ActivityHeatmap({ data }: { data: HeatmapDay[] }) {
                         <div className="font-medium">
                           {format(new Date(cell.day), "EEE, d MMM yyyy")}
                         </div>
-                        <div className="text-[hsl(var(--muted-foreground))]">
-                          {cell.minutes} min
+                        <div className="text-[hsl(var(--muted-foreground))] tabular-nums">
+                          {formatHm(cell.minutes)}
                         </div>
                       </div>
                     </TooltipContent>

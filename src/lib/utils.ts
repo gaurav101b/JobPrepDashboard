@@ -12,6 +12,16 @@ export function formatMinutes(mins: number): string {
   return m === 0 ? `${h}h` : `${h}h ${m}m`;
 }
 
+// Compact `h:mm` format used across activity displays (charts, stat cards).
+// 75 -> "1:15", 0 -> "0:00", 60 -> "1:00". Pomodoro UI deliberately keeps
+// minute-only "Xm" display.
+export function formatHm(mins: number): string {
+  const total = Math.max(0, Math.round(mins));
+  const h = Math.floor(total / 60);
+  const mm = total % 60;
+  return `${h}:${mm.toString().padStart(2, "0")}`;
+}
+
 export function formatDate(date: Date | string | number): string {
   const d = new Date(date);
   return d.toLocaleDateString(undefined, {

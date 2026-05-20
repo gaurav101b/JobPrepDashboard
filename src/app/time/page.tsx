@@ -21,7 +21,7 @@ import {
   getTodayMinutes,
 } from "@/lib/queries";
 import { isSpotifyConfigured, getSpotifyConnection } from "@/lib/spotify";
-import { formatMinutes } from "@/lib/utils";
+import { formatHm } from "@/lib/utils";
 import {
   CATEGORY_COLORS,
   CATEGORY_LABELS,
@@ -68,21 +68,21 @@ export default async function TimePage() {
         <div className="grid grid-cols-3 gap-3 mb-5">
           <StatCard
             label="Today"
-            value={formatMinutes(today)}
+            value={formatHm(today)}
             icon={Clock}
             accent="violet"
           />
           <StatCard
             label="Last 7 days"
-            value={formatMinutes(last7)}
-            hint={`${formatMinutes(avg7)}/day avg`}
+            value={formatHm(last7)}
+            hint={`${formatHm(avg7)}/day avg`}
             icon={Activity}
             accent="indigo"
           />
           <StatCard
             label="Study streak"
             value={`${streaks.studyStreak}d`}
-            hint={`30d total: ${formatMinutes(last30Sum)}`}
+            hint={`30d total: ${formatHm(last30Sum)}`}
             icon={Flame}
             accent="rose"
           />

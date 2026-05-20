@@ -30,7 +30,7 @@ import {
   getTodayMinutes,
   getUpcomingSteps,
 } from "@/lib/queries";
-import { formatMinutes } from "@/lib/utils";
+import { formatHm } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -82,8 +82,8 @@ export default async function HomePage() {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
           <BigCard
             label="Studied today"
-            value={formatMinutes(todayMinutes)}
-            hint={`${formatMinutes(last7)} last 7 days`}
+            value={formatHm(todayMinutes)}
+            hint={`${formatHm(last7)} last 7 days`}
             icon={Clock}
             tint="from-indigo-500/15 to-indigo-500/5 border-indigo-500/30"
             iconClass="text-indigo-500"

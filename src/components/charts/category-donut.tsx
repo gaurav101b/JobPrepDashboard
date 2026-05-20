@@ -13,7 +13,7 @@ import {
   CATEGORY_LABELS,
   type StudyCategory,
 } from "@/lib/constants";
-import { formatMinutes } from "@/lib/utils";
+import { formatHm } from "@/lib/utils";
 
 export function CategoryDonut({
   data,
@@ -66,7 +66,7 @@ export function CategoryDonut({
               borderRadius: 8,
               fontSize: 12,
             }}
-            formatter={(v) => formatMinutes(Number(v ?? 0))}
+            formatter={(v) => formatHm(Number(v ?? 0))}
           />
           <Legend
             wrapperStyle={{ fontSize: 11 }}

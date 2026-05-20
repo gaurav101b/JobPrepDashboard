@@ -15,6 +15,7 @@ import {
   CATEGORY_LABELS,
   STUDY_CATEGORIES,
 } from "@/lib/constants";
+import { formatHm } from "@/lib/utils";
 
 export function CategoryBars({
   data,
@@ -39,7 +40,8 @@ export function CategoryBars({
             tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
             axisLine={false}
             tickLine={false}
-            unit="m"
+            tickFormatter={(v: number) => formatHm(v)}
+            width={42}
           />
           <RTooltip
             cursor={{ fill: "hsl(var(--accent))", opacity: 0.3 }}
@@ -49,6 +51,7 @@ export function CategoryBars({
               borderRadius: 8,
               fontSize: 12,
             }}
+            formatter={(v) => formatHm(Number(v ?? 0))}
           />
           <Legend wrapperStyle={{ fontSize: 11 }} />
           {STUDY_CATEGORIES.map((cat) => (
