@@ -4,6 +4,15 @@ A single-user, self-hosted study and application tracker for software engineerin
 
 > Vibe-coded with an AI agent — polished where it matters (timer, theme, data flow), rough at the edges (some tabs are intentional stubs). Built for one person; if you fork it, expect to read the code.
 
+<img width="800" height="384" alt="image" src="https://github.com/user-attachments/assets/20505397-47f5-4534-94ee-60db3436fd6c" />
+
+<img width="800" height="642" alt="image" src="https://github.com/user-attachments/assets/47f1c5e7-0304-4267-9ee1-370312573a2d" />
+
+<img width="800" height="622" alt="image" src="https://github.com/user-attachments/assets/9c2973aa-5e49-45d2-b9a0-13d99e76dd13" />
+
+<img width="800" height="481" alt="image" src="https://github.com/user-attachments/assets/836cecf1-115a-4ad1-a6a4-455b2e0cb50d" />
+
+
 ## Highlights
 
 - **Hero Pomodoro** — large central timer, click-to-set category, presets, partial-save, browser notifications, persists across reloads.
