@@ -1,7 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { toast } from "sonner";
+import { useEffect, useMemo, useState } from "react";
 import {
   Play,
   Pause,
@@ -24,115 +23,18 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { logSession } from "@/lib/actions/sessions";
 import {
   STUDY_CATEGORIES,
   CATEGORY_COLORS,
   CATEGORY_LABELS,
 } from "@/lib/constants";
 import { cn } from "@/lib/utils";
-
-const VALID_CATEGORIES: readonly string[] = STUDY_CATEGORIES;
-
-type Phase = "focus" | "break";
-type TimerState = {
-  startTs: number | null;
-  pausedAt: number | null;
-  pausedAccum: number;
-  durationSec: number;
-  phase: Phase;
-  task: string;
-  category: string;
-  focusMin: number;
-  breakMin: number;
-  cyclesDone: number;
-  soundOn: boolean;
-  notifyOn: boolean;
-};
-
-const STORAGE_KEY = "pomodoro.v1";
-
-const DEFAULTS: TimerState = {
-  startTs: null,
-  pausedAt: null,
-  pausedAccum: 0,
-  durationSec: 25 * 60,
-  phase: "focus",
-  task: "",
-  category: "DSA",
-  focusMin: 25,
-  breakMin: 5,
-  cyclesDone: 0,
-  soundOn: true,
-  notifyOn: false,
-};
-
-function loadState(): TimerState {
-  if (typeof window === "undefined") return DEFAULTS;
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return DEFAULTS;
-    const parsed = JSON.parse(raw) as Partial<TimerState>;
-    const merged = { ...DEFAULTS, ...parsed };
-    if (!VALID_CATEGORIES.includes(merged.category)) merged.category = "DSA";
-    return merged;
-  } catch {
-    return DEFAULTS;
-  }
-}
-
-function saveState(s: TimerState) {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
-}
-
-function elapsedSec(s: TimerState): number {
-  if (!s.startTs) return 0;
-  const stopAt = s.pausedAt ?? Date.now();
-  const ms = stopAt - s.startTs - s.pausedAccum;
-  return Math.max(0, Math.floor(ms / 1000));
-}
-
-function formatClock(totalSec: number): string {
-  const m = Math.max(0, Math.floor(totalSec / 60));
-  const s = Math.max(0, totalSec % 60);
-  return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
-}
-
-function playChime(volume = 0.55) {
-  try {
-    type WebkitAudio = typeof window & { webkitAudioContext?: typeof AudioContext };
-    const w = window as WebkitAudio;
-    const Ctx = window.AudioContext ?? w.webkitAudioContext;
-    if (!Ctx) return;
-    const ctx = new Ctx();
-    const now = ctx.currentTime;
-    const freqs = [880, 660, 880];
-    freqs.forEach((f, i) => {
-      const o = ctx.createOscillator();
-      const g = ctx.createGain();
-      o.type = "sine";
-      o.frequency.value = f;
-      g.gain.value = 0;
-      const start = now + i * 0.18;
-      g.gain.linearRampToValueAtTime(volume, start + 0.02);
-      g.gain.linearRampToValueAtTime(0, start + 0.16);
-      o.connect(g).connect(ctx.destination);
-      o.start(start);
-      o.stop(start + 0.18);
-    });
-    setTimeout(() => ctx.close(), 1500);
-  } catch {
-    // ignore
-  }
-}
-
-function notify(title: string, body: string) {
-  if (typeof Notification === "undefined") return;
-  if (Notification.permission === "granted") {
-    new Notification(title, { body });
-  }
-}
+import {
+  usePomodoro,
+  elapsedSec,
+  formatClock,
+  type Phase,
+} from "@/components/time/pomodoro-context";
 
 const PRESETS: Array<[number, number]> = [
   [25, 5],
@@ -141,197 +43,44 @@ const PRESETS: Array<[number, number]> = [
 ];
 
 export function PomodoroTimer() {
-  const [state, setState] = useState<TimerState>(DEFAULTS);
-  const [hydrated, setHydrated] = useState(false);
+  const {
+    state,
+    hydrated,
+    setState,
+    start,
+    pause,
+    reset,
+    addFiveMin,
+    stopAndSave,
+    setPhase,
+    setFocusMin,
+    setBreakMin,
+  } = usePomodoro();
   const [, force] = useState(0);
-  const completedRef = useRef(false);
-  const titleBackup = useRef<string | null>(null);
-
-  useEffect(() => {
-    setState(loadState());
-    setHydrated(true);
-  }, []);
-
-  useEffect(() => {
-    if (!hydrated) return;
-    saveState(state);
-  }, [state, hydrated]);
 
   const isRunning = state.startTs !== null && state.pausedAt === null;
   const elapsed = elapsedSec(state);
   const remaining = Math.max(0, state.durationSec - elapsed);
-  const completed = state.startTs !== null && elapsed >= state.durationSec;
-  const progressPct = state.durationSec > 0 ? (elapsed / state.durationSec) * 100 : 0;
+  const progressPct =
+    state.durationSec > 0 ? (elapsed / state.durationSec) * 100 : 0;
 
+  // Visible countdown — re-render 4×/sec while running so the clock animates.
+  // Auto-completion is handled by the provider; this is purely cosmetic.
   useEffect(() => {
     if (!isRunning) return;
     const t = setInterval(() => force((x) => x + 1), 250);
     return () => clearInterval(t);
   }, [isRunning]);
 
-  useEffect(() => {
-    if (typeof document === "undefined") return;
-    if (titleBackup.current === null) titleBackup.current = document.title;
-    if (state.startTs && state.pausedAt === null && remaining >= 0) {
-      const phaseLabel = state.phase === "focus" ? "Focus" : "Break";
-      const task = state.task ? ` · ${state.task}` : "";
-      document.title = `${formatClock(remaining)} ${phaseLabel}${task}`;
-    } else if (titleBackup.current) {
-      document.title = titleBackup.current;
-    }
-  }, [state.startTs, state.pausedAt, state.phase, state.task, remaining]);
-
-  const handleComplete = useCallback(
-    async (snapshot: TimerState, autoSwitch: boolean) => {
-      if (completedRef.current) return;
-      completedRef.current = true;
-      const minutes = Math.round(snapshot.durationSec / 60);
-      if (snapshot.phase === "focus" && minutes > 0) {
-        try {
-          await logSession({
-            category: snapshot.category,
-            minutes,
-            note: snapshot.task || null,
-            source: "pomodoro",
-          });
-          toast.success(`Logged ${minutes}m of ${CATEGORY_LABELS[snapshot.category as keyof typeof CATEGORY_LABELS] ?? snapshot.category}`, {
-            description: snapshot.task || "Session complete",
-          });
-        } catch (e) {
-          toast.error("Could not log session: " + String(e));
-        }
-      }
-      if (snapshot.soundOn) playChime();
-      if (snapshot.notifyOn) {
-        notify(
-          snapshot.phase === "focus" ? "Focus done · time to break" : "Break over · back to focus",
-          snapshot.task || snapshot.category
-        );
-      }
-      setState((prev) => ({
-        ...prev,
-        startTs: null,
-        pausedAt: null,
-        pausedAccum: 0,
-        cyclesDone: snapshot.phase === "focus" ? prev.cyclesDone + 1 : prev.cyclesDone,
-        phase: autoSwitch && snapshot.phase === "focus" ? "break" : "focus",
-        durationSec:
-          (autoSwitch && snapshot.phase === "focus"
-            ? snapshot.breakMin
-            : snapshot.focusMin) * 60,
-      }));
-      setTimeout(() => {
-        completedRef.current = false;
-      }, 800);
-    },
-    []
-  );
-
-  useEffect(() => {
-    if (completed && state.startTs !== null) {
-      handleComplete(state, true);
-    }
-  }, [completed, state, handleComplete]);
-
-  const start = useCallback(() => {
-    if (!state.task.trim() && state.phase === "focus") {
-      toast.warning("Add a task label so future-you remembers what this was for.");
-      return;
-    }
-    setState((prev) => {
-      if (prev.startTs && prev.pausedAt) {
-        const pauseDur = Date.now() - prev.pausedAt;
-        return { ...prev, pausedAt: null, pausedAccum: prev.pausedAccum + pauseDur };
-      }
-      return { ...prev, startTs: Date.now(), pausedAt: null, pausedAccum: 0 };
-    });
-    if (state.notifyOn && typeof Notification !== "undefined") {
-      Notification.requestPermission().catch(() => {});
-    }
-  }, [state.task, state.phase, state.notifyOn]);
-
-  const pause = useCallback(() => {
-    setState((prev) => (prev.pausedAt ? prev : { ...prev, pausedAt: Date.now() }));
-  }, []);
-
-  const reset = useCallback(() => {
-    setState((prev) => ({
-      ...prev,
-      startTs: null,
-      pausedAt: null,
-      pausedAccum: 0,
-      durationSec: (prev.phase === "focus" ? prev.focusMin : prev.breakMin) * 60,
-    }));
-  }, []);
-
-  const addFiveMin = useCallback(() => {
-    setState((prev) => ({ ...prev, durationSec: prev.durationSec + 5 * 60 }));
-  }, []);
-
-  const stopAndSave = useCallback(async () => {
-    if (state.startTs === null) return;
-    const elapsedSeconds = elapsedSec(state);
-    const minutes = Math.round(elapsedSeconds / 60);
-    if (state.phase === "focus" && minutes >= 1) {
-      try {
-        await logSession({
-          category: state.category,
-          minutes,
-          note: state.task || null,
-          source: "pomodoro-partial",
-        });
-        toast.success(`Saved ${minutes}m of ${CATEGORY_LABELS[state.category as keyof typeof CATEGORY_LABELS] ?? state.category}`, {
-          description: state.task || "Stopped early",
-        });
-      } catch (e) {
-        toast.error("Could not save: " + String(e));
-      }
-    } else if (state.phase === "focus" && minutes < 1) {
-      toast.message("Less than a minute — not saving");
-    }
-    setState((prev) => ({
-      ...prev,
-      startTs: null,
-      pausedAt: null,
-      pausedAccum: 0,
-      durationSec: prev.focusMin * 60,
-      phase: "focus",
-    }));
-  }, [state]);
-
-  const setPhase = (p: Phase) => {
-    setState((prev) => ({
-      ...prev,
-      phase: p,
-      startTs: null,
-      pausedAt: null,
-      pausedAccum: 0,
-      durationSec: (p === "focus" ? prev.focusMin : prev.breakMin) * 60,
-    }));
-  };
-
-  const setFocusMin = (n: number) => {
-    setState((prev) => ({
-      ...prev,
-      focusMin: n,
-      durationSec: prev.phase === "focus" ? n * 60 : prev.durationSec,
-    }));
-  };
-
-  const setBreakMin = (n: number) => {
-    setState((prev) => ({
-      ...prev,
-      breakMin: n,
-      durationSec: prev.phase === "break" ? n * 60 : prev.durationSec,
-    }));
-  };
-
   const radius = 142;
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference * (1 - progressPct / 100);
   const ringColor = useMemo(() => {
     if (state.phase === "break") return "#10b981";
-    return CATEGORY_COLORS[state.category as keyof typeof CATEGORY_COLORS] ?? "#9b8ec7";
+    return (
+      CATEGORY_COLORS[state.category as keyof typeof CATEGORY_COLORS] ??
+      "#9b8ec7"
+    );
   }, [state.category, state.phase]);
 
   if (!hydrated) {
@@ -584,9 +333,7 @@ export function PomodoroTimer() {
                   className="size-2 rounded-full"
                   style={{
                     background:
-                      state.category === c
-                        ? "white"
-                        : CATEGORY_COLORS[c],
+                      state.category === c ? "white" : CATEGORY_COLORS[c],
                   }}
                 />
                 {CATEGORY_LABELS[c]}
@@ -622,7 +369,7 @@ export function PomodoroTimer() {
             <span className="mx-1 h-5 w-px bg-[hsl(var(--border))]" />
             <button
               type="button"
-              onClick={() => setPhase("focus")}
+              onClick={() => setPhase("focus" as Phase)}
               className={cn(
                 "h-7 px-2.5 rounded-full text-xs flex items-center gap-1 border transition-colors",
                 state.phase === "focus"
@@ -634,7 +381,7 @@ export function PomodoroTimer() {
             </button>
             <button
               type="button"
-              onClick={() => setPhase("break")}
+              onClick={() => setPhase("break" as Phase)}
               className={cn(
                 "h-7 px-2.5 rounded-full text-xs flex items-center gap-1 border transition-colors",
                 state.phase === "break"

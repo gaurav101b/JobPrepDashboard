@@ -4,6 +4,7 @@ import "./globals.css";
 import { Sidebar } from "@/components/nav/sidebar";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { PomodoroProvider } from "@/components/time/pomodoro-context";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -54,10 +55,14 @@ export default function RootLayout({
       </head>
       <body className="min-h-full bg-[hsl(var(--background))] text-[hsl(var(--foreground))]">
         <TooltipProvider delayDuration={150}>
-          <div className="flex min-h-screen">
-            <Sidebar />
-            <div className="flex-1 min-w-0 flex flex-col">{children}</div>
-          </div>
+          {/* PomodoroProvider lives at the root so the timer keeps ticking
+              and auto-logs sessions even when /time is not the active page. */}
+          <PomodoroProvider>
+            <div className="flex min-h-screen">
+              <Sidebar />
+              <div className="flex-1 min-w-0 flex flex-col">{children}</div>
+            </div>
+          </PomodoroProvider>
           <Toaster position="top-right" richColors closeButton />
         </TooltipProvider>
       </body>
