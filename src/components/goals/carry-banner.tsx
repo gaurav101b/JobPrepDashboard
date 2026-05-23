@@ -31,17 +31,19 @@ export function CarryBanner({ tasks }: { tasks: Task[] }) {
   return (
     <Card className="border-amber-500/30 bg-amber-500/5">
       <CardContent className="p-3 md:p-4 space-y-2">
-        <button
-          className="w-full flex items-center justify-between gap-3 text-left"
-          onClick={() => setOpen((v) => !v)}
-        >
-          <div className="flex items-center gap-2 min-w-0">
+        <div className="w-full flex items-center justify-between gap-3">
+          <button
+            type="button"
+            onClick={() => setOpen((v) => !v)}
+            aria-expanded={open}
+            className="flex items-center gap-2 min-w-0 text-left flex-1"
+          >
             {open ? (
-              <ChevronDown className="size-4 text-amber-500" />
+              <ChevronDown className="size-4 text-amber-500 shrink-0" />
             ) : (
-              <ChevronRight className="size-4 text-amber-500" />
+              <ChevronRight className="size-4 text-amber-500 shrink-0" />
             )}
-            <AlertCircle className="size-4 text-amber-500" />
+            <AlertCircle className="size-4 text-amber-500 shrink-0" />
             <span className="text-sm font-medium">
               {tasks.length} unfinished{" "}
               {tasks.length === 1 ? "task" : "tasks"} from earlier
@@ -49,20 +51,17 @@ export function CarryBanner({ tasks }: { tasks: Task[] }) {
             <span className="text-[11px] text-[hsl(var(--muted-foreground))]">
               · oldest {oldestAge}d
             </span>
-          </div>
+          </button>
           <Button
             size="sm"
             variant="outline"
             disabled={pending}
-            onClick={(e) => {
-              e.stopPropagation();
-              carryAll();
-            }}
-            className="h-7 text-xs"
+            onClick={carryAll}
+            className="h-7 text-xs shrink-0"
           >
             Bring all to today
           </Button>
-        </button>
+        </div>
 
         {open ? (
           <div className="pt-1 divide-y divide-[hsl(var(--border))]/40">
