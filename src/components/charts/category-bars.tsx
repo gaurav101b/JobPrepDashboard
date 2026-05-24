@@ -10,12 +10,64 @@ import {
   Legend,
   CartesianGrid,
 } from "recharts";
+import type { TooltipContentProps } from "recharts";
 import {
   CATEGORY_COLORS,
   CATEGORY_LABELS,
   STUDY_CATEGORIES,
 } from "@/lib/constants";
 import { formatHm } from "@/lib/utils";
+
+// Custom tooltip: per-category breakdown (non-zero only) + a Total row.
+// Default recharts tooltip only renders the stack pieces — we want the day's
+// total time alongside the breakdown so the user sees both at a glance.
+function CategoryTooltip(props: Partial<TooltipContentProps<number, string>>) {
+  const { active, payload, label } = props;
+  if (!active || !payload || payload.length === 0) return null;
+  const entries = payload.filter((p) => Number(p.value ?? 0) > 0);
+  const total = payload.reduce(
+    (sum: number, p) => sum + Number(p.value ?? 0),
+    0
+  );
+  return (
+    <div
+      className="rounded-lg border bg-[hsl(var(--popover))] text-[hsl(var(--popover-foreground))] shadow-md"
+      style={{
+        borderColor: "hsl(var(--border))",
+        padding: "8px 10px",
+        fontSize: 12,
+        minWidth: 140,
+      }}
+    >
+      {label ? (
+        <div className="text-[10px] uppercase tracking-wide text-[hsl(var(--muted-foreground))] mb-1.5">
+          {String(label)}
+        </div>
+      ) : null}
+      <ul className="space-y-1">
+        {entries.map((p) => (
+          <li
+            key={String(p.dataKey ?? p.name)}
+            className="flex items-center gap-2"
+          >
+            <span
+              className="size-2 rounded-sm shrink-0"
+              style={{ background: String(p.color ?? p.fill ?? "currentColor") }}
+            />
+            <span className="flex-1 truncate">{String(p.name)}</span>
+            <span className="tabular-nums font-medium">
+              {formatHm(Number(p.value ?? 0))}
+            </span>
+          </li>
+        ))}
+      </ul>
+      <div className="mt-1.5 pt-1.5 border-t border-[hsl(var(--border))] flex items-center justify-between">
+        <span className="text-[hsl(var(--muted-foreground))]">Total</span>
+        <span className="tabular-nums font-semibold">{formatHm(total)}</span>
+      </div>
+    </div>
+  );
+}
 
 export function CategoryBars({
   data,
@@ -45,13 +97,7 @@ export function CategoryBars({
           />
           <RTooltip
             cursor={{ fill: "hsl(var(--accent))", opacity: 0.3 }}
-            contentStyle={{
-              background: "hsl(var(--popover))",
-              border: "1px solid hsl(var(--border))",
-              borderRadius: 8,
-              fontSize: 12,
-            }}
-            formatter={(v) => formatHm(Number(v ?? 0))}
+            content={<CategoryTooltip />}
           />
           <Legend wrapperStyle={{ fontSize: 11 }} />
           {STUDY_CATEGORIES.map((cat) => (
